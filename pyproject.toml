@@ -2,7 +2,7 @@
 name = "aocs-mcp-server"
 version = "1.0.0"
 description = "AOCS‑Ω FastMCP Server — Apex Omniscient Cognitive System"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "mcp>=1.0.0",
     "pydantic>=2.0.0",
@@ -12,3 +12,6 @@ dependencies = [
 
 [project.scripts]
 aocs-mcp = "aocs_mcp:main"
+
+[tool.setuptools.packages.find]
+include = ["aocs_mcp*"]
