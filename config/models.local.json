@@ -1,0 +1,26 @@
+{
+  "_comment": [
+    "OPTIONAL: Per-role model configuration for direct API mode.",
+    "By default, all LLM calls go through your host CLI (opencode run / claude --print).",
+    "No changes needed — this file only matters if you want per-role model selection.",
+    "",
+    "Example — use different models for different AOCS roles:",
+    "{",
+    "  \"direct_api\": {",
+    "    \"enabled\": true,",
+    "    \"anthropic\": { \"api_key\": \"sk-your-key\", \"default_model\": \"claude-sonnet-4-6\" },",
+    "    \"openai\": { \"api_key\": \"sk-your-key\", \"default_model\": \"gpt-4o\" }",
+    "  },",
+    "  \"roles\": {",
+    "    \"specialist\": {",
+    "      \"mode\": \"direct-api\",",
+    "      \"direct_api\": { \"provider\": \"anthropic\", \"model\": \"claude-opus-4-8\" }",
+    "    },",
+    "    \"deception-detector\": {",
+    "      \"mode\": \"direct-api\",",
+    "      \"direct_api\": { \"provider\": \"openai\", \"model\": \"gpt-4o-mini\" }",
+    "    }",
+    "  }",
+    "}"
+  ]
+}

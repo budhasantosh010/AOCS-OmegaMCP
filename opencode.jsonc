@@ -2,10 +2,8 @@
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
     "aocs-omega": {
-      "type": "local",
-      "command": "python",
-      "args": ["-m", "aocs_mcp"],
-      "env": {}
+      "enabled": true,
+      "command": ["python", "-m", "aocs_mcp"]
     }
   }
 }

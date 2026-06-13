@@ -3,4 +3,4 @@ __pycache__/
 *.pyo
 dist/
 *.egg-info/
-config/models.local.json
+# Edit config/models.local.json for per-role model selection (placeholder file checked into repo)
