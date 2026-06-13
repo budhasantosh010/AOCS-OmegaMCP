@@ -1,0 +1,33 @@
+{
+  "_comment": "Default model routing — checked into git. Copy to models.local.json to override.",
+  "host_cli": {
+    "enabled": true,
+    "priority": ["opencode", "claude", "cursor"]
+  },
+  "direct_api": {
+    "enabled": false,
+    "_comment": "Add api_key in models.local.json to enable direct API mode"
+  },
+  "roles": {
+    "classifier":            { "mode": "host-cli" },
+    "multi-framer":          { "mode": "host-cli" },
+    "root-problem":          { "mode": "host-cli" },
+    "deep-test":             { "mode": "host-cli" },
+    "specialist":            { "mode": "host-cli" },
+    "red-team":              { "mode": "host-cli" },
+    "contrarian":            { "mode": "host-cli" },
+    "deception-detector":    { "mode": "host-cli" },
+    "judge":                 { "mode": "host-cli" },
+    "observer":              { "mode": "host-cli" },
+    "shadow-orchestrator":   { "mode": "host-cli" },
+    "type3-lens":            { "mode": "host-cli" },
+    "type3-first-principles": { "mode": "host-cli" },
+    "type3-hypothesis":      { "mode": "host-cli" },
+    "analogical-mining":     { "mode": "host-cli" },
+    "higher-dimension":      { "mode": "host-cli" },
+    "future-backcast":       { "mode": "host-cli" },
+    "swarm-worker":          { "mode": "host-cli" },
+    "swarm-auditor":         { "mode": "host-cli" },
+    "tmr":                   { "mode": "host-cli" }
+  }
+}
