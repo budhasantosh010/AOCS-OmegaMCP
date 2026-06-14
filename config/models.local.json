@@ -1,26 +1,8 @@
 {
-  "_comment": [
-    "OPTIONAL: Per-role model configuration for direct API mode.",
-    "By default, all LLM calls go through your host CLI (opencode run / claude --print).",
-    "No changes needed — this file only matters if you want per-role model selection.",
-    "",
-    "Example — use different models for different AOCS roles:",
-    "{",
-    "  \"direct_api\": {",
-    "    \"enabled\": true,",
-    "    \"anthropic\": { \"api_key\": \"sk-your-key\", \"default_model\": \"claude-sonnet-4-6\" },",
-    "    \"openai\": { \"api_key\": \"sk-your-key\", \"default_model\": \"gpt-4o\" }",
-    "  },",
-    "  \"roles\": {",
-    "    \"specialist\": {",
-    "      \"mode\": \"direct-api\",",
-    "      \"direct_api\": { \"provider\": \"anthropic\", \"model\": \"claude-opus-4-8\" }",
-    "    },",
-    "    \"deception-detector\": {",
-    "      \"mode\": \"direct-api\",",
-    "      \"direct_api\": { \"provider\": \"openai\", \"model\": \"gpt-4o-mini\" }",
-    "    }",
-    "  }",
-    "}"
-  ]
+  "_comment": "TEST OVERRIDE — routes every AOCS LLM call to OpenCode Go's DeepSeek V4 Flash through the direct HTTPS API. The API key is read from OPENCODE_API_KEY and is never stored in this file. Remove 'force_provider' to restore normal per-role routing.",
+  "force_provider": { "provider": "opencode-go", "model": "deepseek-v4-flash" },
+  "opencode_go": {
+    "transport": "direct-http",
+    "variant": "max"
+  }
 }

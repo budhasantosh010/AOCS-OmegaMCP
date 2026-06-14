@@ -3,4 +3,11 @@ __pycache__/
 *.pyo
 dist/
 *.egg-info/
+.aocs/runs/
+.opencode/node_modules/
+.opencode/runtime/
+.opencode/package.json
+.opencode/package-lock.json
+.opencode/bun.lock
+.codemap/
 # Edit config/models.local.json for per-role model selection (placeholder file checked into repo)

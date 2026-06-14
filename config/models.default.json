@@ -1,5 +1,10 @@
 {
+  "expose_debug_tools": false,
   "_comment": "Default model routing — checked into git. Copy to models.local.json to override.",
+  "runtime": {
+    "persist_runs": true,
+    "run_dir": ".aocs/runs"
+  },
   "host_cli": {
     "enabled": true,
     "priority": ["opencode", "claude", "cursor"]
@@ -9,6 +14,7 @@
     "_comment": "Add api_key in models.local.json to enable direct API mode"
   },
   "roles": {
+    "direct-answer":         { "mode": "host-cli" },
     "classifier":            { "mode": "host-cli" },
     "multi-framer":          { "mode": "host-cli" },
     "root-problem":          { "mode": "host-cli" },

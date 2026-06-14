@@ -12,6 +12,7 @@ from aocs_mcp.pipeline.models import (
     Assumption, ScoredProblem,
 )
 from aocs_mcp.pipeline.orchestrator import AOCSOrchestrator
+from aocs_mcp.runtime import AOCSRunRequest, AOCSRuntime
 from aocs_mcp.phase0.parser import parse
 from aocs_mcp.phase0.multi_framer import MultiFramer
 from aocs_mcp.phase0.assumptions import AssumptionMapper
@@ -52,16 +53,26 @@ router = LLMRouter(config)
 mcp = FastMCP("aocs-omega")
 
 
+def _hidden_tool(*args, **kwargs):
+    """Decorator used to keep debug helpers importable but off the MCP surface."""
+    def decorator(func):
+        return func
+    return decorator
+
+
+debug_tool = mcp.tool if config.get("expose_debug_tools", False) else _hidden_tool
+
+
 # ── Tool: Full Orchestrator ───────────────────────────────────
 
 @mcp.tool()
-async def aocs_analyze(
+async def aocs_run_full(
     problem: str,
     domain: str = "software",
     risk: str = "medium",
     fractal_depth: int = 0,
     context: str | None = None,
-    max_sub_agents: int = 10,
+    max_sub_agents: int = 16,
 ) -> AnalysisResult:
     """Full AOCS‑Ω pipeline: Phase 0 → Phase 1 → Classify → Route → Execute → Verify → Report.
 
@@ -72,12 +83,32 @@ async def aocs_analyze(
     - context: Additional context (logs, error messages, etc.)
     - max_sub_agents: Maximum LLM sub-agent calls allowed
     """
-    orchestrator = AOCSOrchestrator(router, config)
-    return await orchestrator.analyze(
+    runtime = AOCSRuntime(config_dir=config_dir)
+    return await runtime.run(AOCSRunRequest(
         problem=problem,
         domain=domain,
         risk=risk,
         fractal_depth=fractal_depth if fractal_depth > 0 else None,
+        context=context,
+        max_sub_agents=max_sub_agents,
+    ))
+
+
+@mcp.tool()
+async def aocs_analyze(
+    problem: str,
+    domain: str = "software",
+    risk: str = "medium",
+    fractal_depth: int = 0,
+    context: str | None = None,
+    max_sub_agents: int = 16,
+) -> AnalysisResult:
+    """Compatibility alias for aocs_run_full. Prefer aocs_run_full for normal use."""
+    return await aocs_run_full(
+        problem=problem,
+        domain=domain,
+        risk=risk,
+        fractal_depth=fractal_depth,
         context=context,
         max_sub_agents=max_sub_agents,
     )
@@ -85,7 +116,7 @@ async def aocs_analyze(
 
 # ── Tool: Classify ────────────────────────────────────────────
 
-@mcp.tool()
+@debug_tool()
 async def aocs_classify(
     problem: str,
     domain: str = "software",
@@ -100,7 +131,7 @@ async def aocs_classify(
 
 # ── Tool: Phase 0 Frame ──────────────────────────────────────
 
-@mcp.tool()
+@debug_tool()
 async def aocs_phase0_frame(
     problem: str,
     domain: str = "software",
@@ -129,7 +160,7 @@ async def aocs_phase0_frame(
 
 # ── Tool: Phase 1 Score ──────────────────────────────────────
 
-@mcp.tool()
+@debug_tool()
 async def aocs_phase1_score(
     interpretations: list[str],
 ) -> list[ScoredProblem]:
@@ -144,7 +175,7 @@ async def aocs_phase1_score(
 
 # ── Tool: Type 2 Triad ───────────────────────────────────────
 
-@mcp.tool()
+@debug_tool()
 async def aocs_run_type2(
     problem: str,
     root_problem: str = "",
@@ -165,7 +196,7 @@ async def aocs_run_type2(
 
 # ── Tool: Specialist ─────────────────────────────────────────
 
-@mcp.tool()
+@debug_tool()
 async def aocs_specialist(
     problem: str,
     root_problem: str = "",
@@ -184,7 +215,7 @@ async def aocs_specialist(
 
 # ── Tool: Red Team ───────────────────────────────────────────
 
-@mcp.tool()
+@debug_tool()
 async def aocs_red_team(proposal: str) -> str:
     """Adversarial Red Team — challenges every assumption. 1 LLM call."""
     result = await RedTeam(router).challenge(proposal)
@@ -193,7 +224,7 @@ async def aocs_red_team(proposal: str) -> str:
 
 # ── Tool: Contrarian ─────────────────────────────────────────
 
-@mcp.tool()
+@debug_tool()
 async def aocs_contrarian(proposal: str, critique: str) -> str:
     """Truth-seeker evaluation of proposal and critique. 1 LLM call."""
     result = await Contrarian(router).evaluate(proposal, critique)
@@ -202,7 +233,7 @@ async def aocs_contrarian(proposal: str, critique: str) -> str:
 
 # ── Tool: Deception Detector ──────────────────────────────────
 
-@mcp.tool()
+@debug_tool()
 async def aocs_deception_detector(
     specialist: str,
     red_team: str,
@@ -215,7 +246,7 @@ async def aocs_deception_detector(
 
 # ── Tool: Judge ──────────────────────────────────────────────
 
-@mcp.tool()
+@debug_tool()
 async def aocs_judge(
     proposal: str,
     critique: str,
@@ -229,7 +260,7 @@ async def aocs_judge(
 
 # ── Tool: Quality Gates ──────────────────────────────────────
 
-@mcp.tool()
+@debug_tool()
 async def aocs_quality_gates(
     solution: str,
     risk: str = "medium",
@@ -246,7 +277,7 @@ async def aocs_quality_gates(
 
 # ── Tool: Breakthrough ───────────────────────────────────────
 
-@mcp.tool()
+@debug_tool()
 async def aocs_breakthrough(
     problem: str,
     method: str = "analogical",
@@ -271,7 +302,7 @@ async def aocs_breakthrough(
 
 # ── Tool: Swarm ───────────────────────────────────────────────
 
-@mcp.tool()
+@debug_tool()
 async def aocs_swarm(
     task: str,
     items: list[str],
@@ -284,7 +315,7 @@ async def aocs_swarm(
 
 # ── Tool: Observer ───────────────────────────────────────────
 
-@mcp.tool()
+@debug_tool()
 async def aocs_observer(
     specialist_confidence: float = 50.0,
     judge_confidence: float = 50.0,
@@ -304,7 +335,7 @@ async def aocs_observer(
 
 # ── Tool: Prover ──────────────────────────────────────────────
 
-@mcp.tool()
+@debug_tool()
 async def aocs_prover(reasoning: str) -> str:
     """Attempt to formalize and prove claims in the reasoning."""
     prover = Prover(router)
