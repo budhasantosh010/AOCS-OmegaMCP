@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "aocs-omega": {
+      "command": "python",
+      "args": ["-m", "aocs_mcp"]
+    }
+  }
+}

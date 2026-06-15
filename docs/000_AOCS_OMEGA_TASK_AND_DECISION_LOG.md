@@ -1,0 +1,774 @@
+﻿# AOCS Omega MCP - Task And Decision Log
+
+This is the living text record for the AOCS Omega MCP project.
+
+Purpose: preserve the full context of what was decided, why it was decided, what was built, what was tested, what was rejected, and what must remain true in future work.
+
+Audience: a curious beginner should be able to read this without already knowing coding-agent terms. The goal is to avoid information loss. If the internal project context is "1", this document tries to make an outside reader see the same "1" instead of a distorted copy.
+
+Rule for future updates: do not delete old entries. Add new dated sections. If something old was wrong, add a correction section that explains what changed and why.
+
+## 2026-06-14 - Documentation Protocol Decision
+
+### Decision
+
+The project will keep two permanent documentation files:
+
+1. `docs/000_AOCS_OMEGA_TASK_AND_DECISION_LOG.md`
+   - Plain text record.
+   - Explains every task, decision, tradeoff, test, failure, and conclusion.
+   - Written so a beginner can understand it.
+
+2. `docs/001_AOCS_OMEGA_UML_STATECHART.md`
+   - Visual record.
+   - Uses a UML state machine diagram, also called a statechart.
+   - Uses composite states, meaning big states that contain smaller states.
+   - Uses orthogonal regions, meaning multiple related areas shown side by side as concurrent regions.
+
+### Why this decision exists
+
+The user wants the project knowledge to survive handoffs, future chats, and future machines without shrinking into vague summaries. The user explicitly warned about information loss, like the Chinese whisper game, where even a tiny misunderstanding compounds over time. Because AOCS is meant to be a serious deterministic reasoning system, the documentation must preserve not only the final conclusions but also the reasoning path that led to them.
+
+### Documentation standard
+
+Every future chat should append to both docs:
+
+- The task log records what happened in words.
+- The statechart records the same project state visually.
+- Neither file should be treated as disposable notes.
+- Secrets must never be written into either file.
+
+## 2026-06-14 - Original User Goal
+
+### Plain-English version
+
+The user built a deep reasoning skill called AOCS Omega. As a Markdown skill, it depends on the outer language model reading and following many important instructions. That failed in practice because even strong models can skim, forget, skip steps, or take shortcuts.
+
+The user does not want AOCS to be only a prompt. The user wants AOCS to be a real engine: code runs the workflow, calls models at required steps, records the result, and gives the final output back to the coding agent.
+
+### Main constraints from the user
+
+1. Future-proof across coding agents.
+   - Must be able to connect to tools like OpenCode, Claude Code, Cursor, Codex, and future coding agents.
+   - The project should not be locked to one app.
+
+2. Easy to trigger.
+   - Ideally callable by a slash command, button, MCP tool, or simple CLI command.
+   - The user should not have to remember a complex setup every time.
+
+3. Deterministic workflow.
+   - The outer coding agent must not be trusted to remember every AOCS step.
+   - The required steps must be enforced by code.
+   - The model should be called at specific steps, like sub-agents inside the workflow.
+
+4. AOCS must be separate from the host coding agent.
+   - OpenCode, Claude Code, Cursor, and Codex should only call AOCS.
+   - They should not become AOCS.
+   - They should not need their internal architecture changed.
+
+5. Do not damage or rewrite existing coding-agent settings.
+   - No silent global config edits.
+   - No unexpected changes to Claude Code, OpenCode, Cursor, Codex, or other agent settings.
+   - Prefer project-scoped config snippets.
+
+6. Model provider flexibility.
+   - AOCS should be able to use external provider APIs.
+   - It should also be ready for future host-model callbacks if coding agents support them.
+   - Different AOCS roles should eventually be able to use different models.
+
+7. Secrets stay outside the repo.
+   - API keys and GitHub tokens must use environment variables or local credential systems.
+   - They must not be committed.
+
+## 2026-06-14 - Terms Explained For Beginners
+
+### Skill
+
+A skill is usually a folder with a Markdown instruction file, often named `SKILL.md`. It tells a model how to behave.
+
+Good for: teaching a model a method.
+
+Bad for: forcing the model to run every step exactly, because the model can skip or forget instructions.
+
+AOCS started as a skill, but the user correctly identified that a skill alone is not deterministic enough.
+
+### Slash command
+
+A slash command is a shortcut the user can type, such as `/aocs-run`.
+
+Important point: a slash command is usually a button or shortcut, not the real engine. It should trigger AOCS, not contain all AOCS logic.
+
+### Plugin
+
+A plugin is usually a packaged extension for an app. Depending on the host app, it can include skills, commands, tools, MCP servers, or UI pieces.
+
+Good for: distribution and install experience.
+
+Bad for: being the core deterministic engine by itself, because each coding agent has its own plugin rules.
+
+### MCP
+
+MCP means Model Context Protocol. It is a standard way for an AI app to connect to external tools.
+
+In this project, MCP lets a coding agent call one AOCS tool, and AOCS runs its own engine separately.
+
+### CLI
+
+CLI means command-line interface. It is a terminal command, for example:
+
+```bash
+aocs run "Analyze this problem deeply"
+```
+
+The CLI is the universal backup. Even if a coding agent has no good plugin system, it can often run a terminal command.
+
+### Host CLI Mode
+
+Host CLI Mode means AOCS would call a coding agent's command-line interface directly, for example:
+
+```text
+AOCS -> claude -p "prompt"
+AOCS -> opencode run "prompt"
+```
+
+This can reuse the host app's logged-in model account, but it is fragile. It can stream in unusual formats, hang, touch local session databases, ask permissions, or behave differently across agents.
+
+Decision: keep Host CLI Mode as a possible fallback, not the main path.
+
+### MCP Sampling
+
+MCP Sampling is an official MCP idea where an MCP server can ask the host client to run a model prompt.
+
+Shape:
+
+```text
+AOCS MCP server -> host client -> host model -> AOCS MCP server
+```
+
+This is close to the user's dream of using the current coding agent's model directly without separate provider keys.
+
+But it only works if the host app supports the MCP `sampling` capability. The protocol supports it, but the coding agent must expose it. We did not add it now because the user chose to avoid more headache for this version.
+
+## 2026-06-14 - Main Architecture Decision
+
+### Chosen architecture
+
+```text
+AOCS Core Runtime + One Public MCP Tool + CLI + Thin Agent Adapters
+```
+
+### Meaning
+
+AOCS Core Runtime:
+- The real engine.
+- Owns the sequence of phases.
+- Calls models when required.
+- Writes run artifacts.
+- Returns the final structured result.
+
+One Public MCP Tool:
+- The coding agent sees one main tool: `aocs_run_full`.
+- There is also `aocs_analyze` as a compatibility alias.
+- Internal phase tools are hidden by default.
+
+CLI:
+- Lets AOCS run from terminal without any coding-agent host.
+- Provides a universal fallback.
+
+Thin Agent Adapters:
+- Slash commands and project config files.
+- They act like buttons.
+- They do not contain the real AOCS logic.
+
+### Why this architecture was chosen
+
+This shape satisfies the user's constraints:
+
+- It is future-proof because MCP and CLI are portable.
+- It is deterministic because the runtime controls the steps.
+- It is safe because adapters are small and project-scoped.
+- It avoids forcing the outer model to read and remember a huge skill.
+- It avoids flooding coding agents with many MCP tools.
+
+### Rejected architecture
+
+Rejected: make AOCS only a Markdown skill.
+
+Reason: the model can skim or skip parts.
+
+Rejected: make the coding agent itself own the AOCS phases.
+
+Reason: every host app behaves differently, so AOCS would not be portable.
+
+Rejected: expose every AOCS phase as a public MCP tool.
+
+Reason: OpenCode warns that MCP tools add context. Many tools would increase context load, confuse the outer model, and let the outer model call the wrong subset of steps.
+
+Rejected for now: MCP Sampling as the main model provider.
+
+Reason: it is promising, but not reliable across all current hosts unless the host declares support for sampling.
+
+Rejected as primary path: Host CLI Mode.
+
+Reason: direct API calls are cleaner, more deterministic, and easier to test.
+
+## 2026-06-14 - Implemented Runtime Boundary
+
+### Files
+
+- `aocs_mcp/runtime.py`
+- `aocs_mcp/cli.py`
+- `aocs_mcp/server.py`
+- `aocs_mcp/router.py`
+- `aocs_mcp/pipeline/orchestrator.py`
+- `aocs_mcp/utils/direct_api.py`
+- `config/models.default.json`
+- `config/models.local.json`
+
+### Runtime request object
+
+`AOCSRunRequest` is the portable input shape used by MCP, CLI, HTTP, and future adapters.
+
+It contains:
+
+- `problem`
+- `domain`
+- `risk`
+- `fractal_depth`
+- `context`
+- `max_sub_agents`
+- `persist`
+- `metadata`
+
+### Runtime engine
+
+`AOCSRuntime` is the product boundary. MCP and CLI should call this runtime instead of knowing about internal AOCS phases.
+
+It does these jobs:
+
+1. Load config.
+2. Create a run id.
+3. Create a run directory if persistence is enabled.
+4. Write `request.json` and running `status.json`.
+5. Create a model router.
+6. Create the orchestrator.
+7. Run the full analysis.
+8. Attach `run_id` and `run_dir` to the result.
+9. Write trace, result, summary, and final status artifacts.
+
+### Run artifact files
+
+Each persisted run writes under `.aocs/runs/<run-id>/`:
+
+- `request.json`: what the user asked AOCS to analyze.
+- `status.json`: running, completed, or error status.
+- `trace.json`: model call trace with role names and prompt hashes.
+- `result.json`: full structured AOCS output.
+- `summary.md`: human-readable summary.
+
+Decision: keep these under `.aocs/runs/` so AOCS does not write into the host coding agent's own database or settings.
+
+## 2026-06-14 - MCP Server Decision
+
+### Implemented with FastMCP
+
+The server uses Python FastMCP:
+
+```python
+from mcp.server.fastmcp import FastMCP
+mcp = FastMCP("aocs-omega")
+```
+
+### Public MCP tools
+
+Normal use exposes only:
+
+- `aocs_run_full`
+- `aocs_analyze`
+
+`aocs_analyze` calls `aocs_run_full` and exists as a friendly alias.
+
+### Hidden debug tools
+
+The old/internal phase tools are still present in code, but hidden unless config says:
+
+```json
+{
+  "expose_debug_tools": true
+}
+```
+
+Decision: hide debug tools by default so the outer coding agent cannot accidentally run only one phase and skip the rest.
+
+## 2026-06-14 - CLI Decision
+
+### Implemented command
+
+The CLI supports:
+
+```bash
+aocs run "Analyze this problem"
+```
+
+It also supports:
+
+- `--domain`
+- `--risk`
+- `--fractal-depth`
+- `--context`
+- `--max-sub-agents`
+- `--output-dir`
+- `--no-store`
+
+Decision: the CLI is the universal backup adapter. If a future coding agent cannot use MCP cleanly, it can still call the CLI.
+
+## 2026-06-14 - Model Provider Decisions
+
+### Provider rule
+
+The outer coding agent should not run AOCS's reasoning phases. AOCS calls model providers itself through the router.
+
+### Implemented providers
+
+The provider registry supports:
+
+- `opencode-go`
+- `openai`
+- `anthropic`
+- `claude` as alias for Anthropic
+- `openrouter`
+- `gemini`
+- `google` as alias for Gemini
+- `nvidia`
+- `nvidia-nim` as alias for NVIDIA
+
+### OpenCode Go direct HTTPS
+
+For this version, the user wanted to test with paid OpenCode Go DeepSeek V4 Flash. The clean path is direct HTTPS:
+
+```text
+AOCS -> OpenCode Go hosted API -> model response
+```
+
+This does not open the OpenCode app.
+This does not start the OpenCode TUI.
+This does not use `opencode run`.
+This does not attach to a local OpenCode server.
+
+The API key is read from `OPENCODE_API_KEY`.
+
+### OpenCode local server transport
+
+A local-server transport remains available because it was useful during research, but it is not the preferred path for the user's current desire.
+
+It uses:
+
+- `POST /session`
+- `POST /session/:id/message`
+- `OPENCODE_SERVER_PASSWORD`
+
+### OpenRouter
+
+OpenRouter uses an OpenAI-compatible chat completions endpoint.
+
+Environment variable:
+
+```text
+OPENROUTER_API_KEY
+```
+
+### Gemini / Google
+
+Gemini uses Google's REST `generateContent` endpoint.
+
+Environment variables:
+
+```text
+GEMINI_API_KEY
+GOOGLE_API_KEY
+```
+
+### NVIDIA / NVIDIA NIM
+
+NVIDIA uses an OpenAI-compatible endpoint.
+
+Environment variable:
+
+```text
+NVIDIA_API_KEY
+```
+
+### OpenAI and Anthropic
+
+OpenAI and Anthropic direct SDK paths remain supported.
+
+Environment variables:
+
+```text
+OPENAI_API_KEY
+ANTHROPIC_API_KEY
+```
+
+### Secrets decision
+
+No API key belongs in Git.
+No API key belongs in `models.default.json`.
+No API key belongs in `models.local.json`.
+No API key belongs in documentation.
+
+## 2026-06-14 - Router Decisions
+
+### Call tracing
+
+The router records each model call with:
+
+- call number
+- AOCS role
+- whether JSON was expected
+- start time
+- system prompt hash
+- user prompt hash
+- prompt lengths
+- provider and model when known
+- status
+- response length
+- duration
+- error if any
+
+Decision: store hashes instead of full prompts in trace so run artifacts are useful without dumping all prompt content into logs.
+
+### Model-call budget
+
+`max_sub_agents` is used as a call budget. If the workflow tries to exceed it, the router raises an error.
+
+Decision: this keeps runs bounded and prevents runaway model calls.
+
+### Structured output
+
+`expect_json` is passed into provider calls so providers that support JSON response mode can be asked for structured output.
+
+Decision: structured calls make deterministic parsing more reliable.
+
+## 2026-06-14 - Orchestrator Decisions
+
+### Main pipeline
+
+The orchestrator runs:
+
+```text
+Phase 0 framing
+Phase 1 scoring
+classification
+Type 1 / Type 2 / Type 3 route
+quality gates
+observer
+shadow orchestrator
+memory audit
+final verdict
+```
+
+### Direct low-risk route
+
+A direct low-risk route was added for simple arithmetic-like questions when:
+
+- risk is `low`
+- fractal depth is absent or zero
+- the problem looks like a simple arithmetic expression
+
+Example: `what is 2+2?`
+
+This route calls the `direct-answer` role once and returns a short answer.
+
+Decision: AOCS should not waste a deep multi-agent workflow on trivial, low-risk, directly verifiable questions.
+
+### Type 1 result compatibility
+
+Type 1 and Type 3 routes are wrapped into a Type 2-like quality subject when needed so quality gates and observer logic can still run with a consistent shape.
+
+Decision: keep final verification consistent across routes.
+
+## 2026-06-14 - Agent Adapter Decisions
+
+### OpenCode project-scoped adapter
+
+Files:
+
+- `opencode.jsonc`
+- `.opencode/commands/aocs-run.md`
+
+Decision: use project-scoped OpenCode configuration instead of silently changing global OpenCode settings.
+
+### Claude Code project-scoped adapter
+
+File:
+
+- `.claude/commands/aocs-run.md`
+
+Decision: provide a slash-command-like entrypoint without changing global Claude Code settings.
+
+### Cursor, Codex, and future agents
+
+Decision: future agents should use the same idea:
+
+- MCP command when supported.
+- CLI fallback when MCP is not available.
+- Thin adapter only.
+- No core AOCS logic inside the host agent's prompt files.
+
+## 2026-06-14 - Research Findings
+
+### MCP Sampling
+
+Official MCP sampling exists and uses `sampling/createMessage`.
+
+Important facts:
+
+- It lets an MCP server request a model call through the MCP client.
+- The client keeps control of model access and permissions.
+- The server does not need provider API keys if the client supports sampling.
+- The client must declare the `sampling` capability.
+- Model hints are only suggestions. The client chooses the final model.
+- The client can reject the sampling request.
+
+Decision for this version: do not implement MCP Sampling now. Keep it as a future optional provider adapter.
+
+Source:
+
+- https://modelcontextprotocol.io/specification/2025-06-18/client/sampling
+
+### OpenCode CLI
+
+OpenCode CLI can be used programmatically with `opencode run`, but it can also start a TUI when run without arguments.
+
+Decision: do not use `opencode run` as the primary AOCS model path because direct HTTPS is cleaner for deterministic runtime.
+
+Source:
+
+- https://opencode.ai/docs/cli/
+
+### OpenCode MCP
+
+OpenCode supports local and remote MCP servers and project configuration. OpenCode docs warn that MCP tools add context, which supports the decision to expose a small public tool surface.
+
+Source:
+
+- https://opencode.ai/docs/mcp-servers/
+
+### Claude Code CLI and MCP
+
+Claude Code supports print mode with `claude -p` and supports MCP configuration. This makes host CLI mode possible for Claude, but still not ideal as the primary AOCS model path.
+
+Sources:
+
+- https://code.claude.com/docs/en/cli-reference
+- https://code.claude.com/docs/en/mcp
+
+### FastMCP
+
+FastMCP is the Python SDK layer used to expose AOCS as an MCP server.
+
+Source:
+
+- https://modelcontextprotocol.io/docs/develop/build-server
+
+## 2026-06-14 - Tests And Observed Results
+
+### Direct provider test
+
+OpenCode Go direct HTTPS was tested with the user's API key stored only in an environment variable.
+
+Observed result:
+
+```text
+TEST_OK
+```
+
+Meaning: the provider adapter can call the model directly without opening OpenCode app or CLI.
+
+### Full runtime simple test
+
+Problem:
+
+```text
+what is 2+2?
+```
+
+Observed result:
+
+```text
+route: direct-low-risk
+answer: 4
+verdict: accept
+total_llm_calls: 1
+```
+
+Meaning: the standalone AOCS runtime can run independently and return a result.
+
+### MCP protocol test
+
+The MCP tool list exposed:
+
+```text
+aocs_run_full
+aocs_analyze
+```
+
+Calling `aocs_run_full` through MCP returned the simple arithmetic answer through the runtime.
+
+Meaning: the MCP adapter correctly triggers the AOCS runtime.
+
+### OpenCode MCP connection test
+
+Normal OpenCode data/config hit an existing SQLite/WAL issue unrelated to AOCS.
+
+An isolated OpenCode config/data test connected successfully:
+
+```text
+aocs-omega connected
+```
+
+Meaning: the AOCS MCP server itself can connect; the earlier issue was in the user's existing OpenCode local state.
+
+### Script-style tests run during development
+
+Tests that were run and passed during the session included:
+
+- `tests/test_models.py`
+- `tests/test_config.py`
+- `tests/test_scorer.py`
+- `tests/test_phase0.py`
+- `tests/test_runtime.py`
+- `tests/test_router.py`
+- `tests/test_opencode_go_direct_http.py`
+- `tests/test_provider_adapters.py`
+- `tests/test_orchestrator_direct.py`
+
+### Secret scan result
+
+A scan was performed for obvious committed secrets. No OpenCode API key or server password was found in files.
+
+Decision: continue scanning before every push.
+
+## 2026-06-14 - Current Repository Change Summary
+
+### Modified existing files
+
+- `.gitignore`
+- `README.md`
+- `aocs_mcp/__init__.py`
+- `aocs_mcp/pipeline/models.py`
+- `aocs_mcp/pipeline/orchestrator.py`
+- `aocs_mcp/router.py`
+- `aocs_mcp/server.py`
+- `aocs_mcp/utils/direct_api.py`
+- `config/models.default.json`
+- `config/models.local.json`
+- `opencode.jsonc`
+- `pyproject.toml`
+
+### Added files and folders
+
+- `.claude/commands/aocs-run.md`
+- `.opencode/commands/aocs-run.md`
+- `aocs_mcp/cli.py`
+- `aocs_mcp/runtime.py`
+- `tests/test_opencode_go.py`
+- `tests/test_opencode_go_direct_http.py`
+- `tests/test_orchestrator_direct.py`
+- `tests/test_provider_adapters.py`
+- `tests/test_router.py`
+- `tests/test_runtime.py`
+- `docs/000_AOCS_OMEGA_TASK_AND_DECISION_LOG.md`
+- `docs/001_AOCS_OMEGA_UML_STATECHART.md`
+
+## 2026-06-14 - Current Final Decision Before GitHub Push
+
+The project should stay as it is for this version.
+
+Do not add MCP Sampling right now.
+Do not add more provider complexity right now.
+Do not add a plugin installer right now.
+Do not convert Host CLI Mode into the primary path right now.
+
+Push this version with:
+
+- standalone deterministic runtime
+- FastMCP server
+- one main public MCP tool
+- CLI fallback
+- OpenCode Go direct HTTPS provider
+- OpenRouter/Gemini/NVIDIA provider support
+- project-scoped OpenCode and Claude adapters
+- run artifact storage
+- tests
+- living documentation
+
+## Future Update Template
+
+Use this template after every future chat.
+
+```text
+## YYYY-MM-DD - Short Title
+
+### User request
+
+### What changed
+
+### Decisions made
+
+### Reasons
+
+### Files changed
+
+### Tests or checks
+
+### Risks or open questions
+
+### Next step
+```
+
+## 2026-06-14 - Pre-Push Verification Entry
+
+### What was checked
+
+Before staging and pushing to GitHub, the repository was checked again.
+
+### Secret scan
+
+A secret scan was run for obvious pasted secrets and known sensitive fragments from the chat.
+
+Result:
+
+```text
+No matches found.
+```
+
+The docs and repo contain placeholder examples such as `"..."`, but they do not contain the real API keys or GitHub token from the chat.
+
+### Test results
+
+The first direct test command failed because Python did not see the local package on `PYTHONPATH`. That was an environment setup issue, not an AOCS logic failure.
+
+After setting `PYTHONPATH` to the repo root, these passed:
+
+- `tests/test_models.py`
+- `tests/test_scorer.py`
+- `tests/test_phase0.py`
+- `tests/test_router.py`
+- `tests/test_orchestrator_direct.py`
+- `tests/test_opencode_go.py`
+- `tests/test_opencode_go_direct_http.py`
+- `tests/test_provider_adapters.py`
+
+Two tests that write temporary files needed to be run outside the sandbox because the sandbox blocked generated temp directories. After running outside the sandbox, these passed:
+
+- `tests/test_config.py`
+- `tests/test_runtime.py`
+
+### Compile check note
+
+`python -m compileall aocs_mcp` was attempted. It failed because Python tried to write `.pyc` files into `__pycache__` folders and the sandbox blocked those writes. This is not counted as a code failure because the script tests imported and exercised the touched modules successfully.
+
+### Decision
+
+Proceed to stage, commit, and push the current version.

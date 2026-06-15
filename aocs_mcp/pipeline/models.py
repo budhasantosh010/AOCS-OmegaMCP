@@ -196,6 +196,8 @@ class FlywheelEntry(BaseModel):
 
 class AnalysisResult(BaseModel):
     # Metadata
+    run_id: str | None = None
+    run_dir: str | None = None
     problem: str = ""
     domain: str = "software"
     problem_type: Literal["type1", "type2", "type3"] = "type2"
@@ -219,6 +221,8 @@ class AnalysisResult(BaseModel):
     contrarian_analysis: str | None = None
     deception_flags: list[str] = []
     judge_verdict: JudgeVerdict | None = None
+    type1_verified: bool | None = None
+    type3_findings: Type3Result | None = None
 
     # Verification
     quality_gates: list[GateResult] = []

@@ -3,9 +3,14 @@
   "mcp": {
     "aocs-omega": {
       "type": "local",
-      "command": "python",
-      "args": ["-m", "aocs_mcp"],
-      "env": {}
+      "command": ["python", "-m", "aocs_mcp"],
+      "cwd": ".",
+      "environment": {
+        "OPENCODE_API_KEY": "{env:OPENCODE_API_KEY}",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "enabled": true,
+      "timeout": 30000
     }
   }
 }

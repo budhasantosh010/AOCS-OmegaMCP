@@ -1,0 +1,8 @@
+{
+  "_comment": "TEST OVERRIDE — routes every AOCS LLM call to OpenCode Go's DeepSeek V4 Flash through the direct HTTPS API. The API key is read from OPENCODE_API_KEY and is never stored in this file. Remove 'force_provider' to restore normal per-role routing.",
+  "force_provider": { "provider": "opencode-go", "model": "deepseek-v4-flash" },
+  "opencode_go": {
+    "transport": "direct-http",
+    "variant": "max"
+  }
+}
