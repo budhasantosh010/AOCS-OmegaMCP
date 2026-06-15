@@ -33,9 +33,9 @@ def test_low_risk_arithmetic_uses_direct_route():
 
     assert result.route_taken == "direct-low-risk"
     assert result.problem_type == "type1"
-    assert result.total_llm_calls == 0
-    assert result.specialist_proposal == "4"
-    assert router.call_log == []
+    assert result.total_llm_calls == 1
+    assert result.specialist_proposal == "2 + 2 = 4."
+    assert router.call_log == [{"role": "direct-answer"}]
 
 
 def test_default_arithmetic_uses_deterministic_route():
@@ -49,11 +49,11 @@ def test_default_arithmetic_uses_deterministic_route():
         )
     )
 
-    assert result.route_taken == "direct-arithmetic"
+    assert result.route_taken == "direct-answer"
     assert result.problem_type == "type1"
-    assert result.total_llm_calls == 0
-    assert result.specialist_proposal == "4"
-    assert router.call_log == []
+    assert result.total_llm_calls == 1
+    assert result.specialist_proposal == "2 + 2 = 4."
+    assert router.call_log == [{"role": "direct-answer"}]
 
 
 if __name__ == "__main__":

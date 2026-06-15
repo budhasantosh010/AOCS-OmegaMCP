@@ -267,6 +267,40 @@ RegressionTestsPassed --> [*]
 @enduml
 ```
 
+## 2026-06-15 - Correction: Direct Arithmetic Still Uses LLM Delta
+
+```plantuml
+@startuml AOCS_Omega_Direct_Arithmetic_Uses_LLM_2026_06_15
+
+title AOCS Omega MCP - Direct Arithmetic Uses LLM Correction - 2026-06-15
+hide empty description
+
+[*] --> UserRejectsCodeAnswer
+UserRejectsCodeAnswer : User states AOCS answers should be delivered by LLM reasoning, not hidden code computation.
+
+UserRejectsCodeAnswer --> DesignPrincipleRestated
+DesignPrincipleRestated : Code enforces rails and routing; LLM roles perform reasoning and produce answers.
+
+DesignPrincipleRestated --> DeterministicAnswerRemoved
+DeterministicAnswerRemoved : Code no longer computes 2+2 = 4 itself.
+
+DeterministicAnswerRemoved --> SimpleProblemRouted
+SimpleProblemRouted : Code detects simple arithmetic only to avoid the deep JSON pipeline.
+
+SimpleProblemRouted --> DirectAnswerRoleCalled
+DirectAnswerRoleCalled : router.call(role="direct-answer") produces the answer.
+
+DirectAnswerRoleCalled --> CorrectedResultShape
+CorrectedResultShape : route=direct-answer; total_llm_calls=1; specialist_proposal comes from LLM.
+
+CorrectedResultShape --> RegressionTestUpdated
+RegressionTestUpdated : Tests assert direct-answer role is called and call count is 1.
+
+RegressionTestUpdated --> [*]
+
+@enduml
+```
+
 ## 2026-06-15 - No-Install Test Confusion And Doctor Encoding Fix Delta
 
 ```plantuml

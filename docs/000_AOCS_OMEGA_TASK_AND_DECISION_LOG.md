@@ -1316,3 +1316,90 @@ python -m aocs_mcp.cli doctor --no-opencode
 ```
 
 All passed.
+
+## 2026-06-15 - Correction: Arithmetic Shortcut Must Still Use LLM
+
+### User correction
+
+The user correctly objected to the previous deterministic arithmetic shortcut.
+
+The user's core AOCS principle is:
+
+```text
+Code enforces the workflow.
+LLMs perform the reasoning and deliver the answer.
+```
+
+Therefore, code should not directly answer `2+2` by computing `4`, even though code can technically do that. AOCS is meant to test and enforce a model-driven reasoning chain, not silently replace the model with hidden application logic.
+
+### Corrected design
+
+Code may do routing and guardrail decisions, such as:
+
+```text
+This looks like a simple directly-answerable problem.
+Do not send it through the expensive deep Type 2 pipeline.
+Send it to the direct-answer LLM role.
+```
+
+But the final answer must come from an LLM role.
+
+### Corrected flow for `what is 2+2?`
+
+Current flow:
+
+```text
+CLI command
+-> AOCSRuntime
+-> AOCSOrchestrator.analyze()
+-> _maybe_direct_low_risk()
+-> _looks_like_simple_arithmetic()
+-> router.call(role="direct-answer")
+-> LLM returns answer
+-> AnalysisResult returned
+```
+
+What code decides:
+
+```text
+route_taken: direct-answer
+problem_type: type1
+skip deep Type 2 pipeline
+```
+
+What the LLM decides:
+
+```text
+specialist_proposal: the actual answer text
+```
+
+### Updated expected result
+
+For the default beginner command:
+
+```powershell
+python -m aocs_mcp.cli run "what is 2+2?"
+```
+
+Expected behavior is now:
+
+```text
+route_taken: direct-answer
+total_llm_calls: 1
+specialist_proposal: answer produced by the direct-answer LLM role
+```
+
+### Why this still fixes the JSON error
+
+The old JSON error happened because a trivial question entered a structured deep phase that expected JSON. The corrected shortcut still avoids that deep structured phase, but it does not compute the answer in code. It uses one plain direct-answer LLM call.
+
+### Tests updated
+
+`tests/test_orchestrator_direct.py` now asserts:
+
+```text
+router.call_log == [{"role": "direct-answer"}]
+total_llm_calls == 1
+```
+
+This prevents future regressions where code secretly answers instead of calling the LLM role.

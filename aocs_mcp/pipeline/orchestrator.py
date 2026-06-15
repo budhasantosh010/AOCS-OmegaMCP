@@ -220,26 +220,11 @@ class AOCSOrchestrator:
         risk: str,
         fractal_depth: int | None,
     ) -> AnalysisResult | None:
-        """Collapse obvious low-risk arithmetic to the shortest useful path."""
-        arithmetic_answer = self._solve_simple_arithmetic(problem)
-        if arithmetic_answer is not None:
-            total_llm_calls = getattr(self.router, "call_count", self.llm_call_count)
-            route = "direct-low-risk" if risk == "low" else "direct-arithmetic"
-            return AnalysisResult(
-                problem=problem,
-                domain=domain,
-                problem_type="type1",
-                route_taken=route,
-                fractal_depth=0,
-                total_llm_calls=total_llm_calls,
-                root_problem="Answer the directly verifiable arithmetic question.",
-                specialist_proposal=arithmetic_answer,
-                confidence=100.0,
-                verdict="accept",
-                recommendations=["Use the deterministic arithmetic answer; no model call was needed."],
-            )
-
-        if risk != "low" or (fractal_depth is not None and fractal_depth > 0):
+        """Route obvious direct questions to a single LLM answer, not the deep pipeline."""
+        is_simple_arithmetic = self._looks_like_simple_arithmetic(problem)
+        if not is_simple_arithmetic and (
+            risk != "low" or (fractal_depth is not None and fractal_depth > 0)
+        ):
             return None
 
         system = (
@@ -253,47 +238,19 @@ class AOCSOrchestrator:
             problem=problem,
             domain=domain,
             problem_type="type1",
-            route_taken="direct-low-risk",
+            route_taken="direct-low-risk" if risk == "low" else "direct-answer",
             fractal_depth=0,
             total_llm_calls=total_llm_calls,
-            root_problem="Answer the directly verifiable low-risk arithmetic question.",
+            root_problem="Answer the directly verifiable question.",
             specialist_proposal=answer,
-            confidence=99.0,
+            confidence=99.0 if risk == "low" else 95.0,
             verdict="accept",
-            recommendations=["Use the direct answer; no deeper AOCS route was needed."],
+            recommendations=["Use the direct LLM answer; no deeper AOCS route was needed."],
         )
 
     @staticmethod
     def _looks_like_simple_arithmetic(problem: str) -> bool:
         return bool(re.search(r"\b\d+\s*(?:\+|-|\*|/|x|X)\s*\d+\b", problem))
-
-    @staticmethod
-    def _solve_simple_arithmetic(problem: str) -> str | None:
-        """Safely solve a single two-number arithmetic expression."""
-        match = re.search(r"\b(-?\d+)\s*(\+|-|\*|/|x|X)\s*(-?\d+)\b", problem)
-        if not match:
-            return None
-
-        left = int(match.group(1))
-        op = match.group(2)
-        right = int(match.group(3))
-
-        if op == "+":
-            value = left + right
-        elif op == "-":
-            value = left - right
-        elif op in ("*", "x", "X"):
-            value = left * right
-        elif op == "/":
-            if right == 0:
-                return "undefined: division by zero"
-            value = left / right
-        else:
-            return None
-
-        if isinstance(value, float) and value.is_integer():
-            value = int(value)
-        return str(value)
 
     async def _run_phase0(self, problem: str, domain: str) -> Phase0Result:
         """Execute Phase 0: Parser → Multi-Framer → Assumptions → Uncertainty → Root → Deep Test."""
