@@ -199,7 +199,7 @@ class AnalysisResult(BaseModel):
     run_id: str | None = None
     run_dir: str | None = None
     problem: str = ""
-    domain: str = "software"
+    domain: str | None = None
     problem_type: Literal["type1", "type2", "type3"] = "type2"
     route_taken: str = ""
     fractal_depth: int = 0

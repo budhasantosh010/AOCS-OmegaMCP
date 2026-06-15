@@ -10,7 +10,7 @@ class QualityGates:
     def __init__(self, router: LLMRouter):
         self.router = router
 
-    async def run(self, result: Type2Result, risk: str = "medium") -> list[GateResult]:
+    async def run(self, result: Type2Result, risk: str | None = None) -> list[GateResult]:
         gates: list[GateResult] = []
 
         # Gate 1: Self-Check
@@ -75,11 +75,12 @@ class QualityGates:
                 details="TMR required for critical risk — run aocs_breakthrough for full TMR",
             ))
         else:
+            risk_label = risk or "not specified"
             gates.append(GateResult(
                 gate_number=7,
                 name="Triple Modular Redundancy",
                 passed=True,
-                details=f"Skipped (risk={risk}, not critical)",
+                details=f"Skipped (risk={risk_label}, not critical)",
             ))
 
         # Gate 8: Formal Methods

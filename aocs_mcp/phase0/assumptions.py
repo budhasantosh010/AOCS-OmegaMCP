@@ -3,7 +3,20 @@
 from aocs_mcp.pipeline.models import Interpretation, Assumption
 
 
-# Common assumptions per domain
+# Common assumptions per domain. When no domain is given, use open-domain
+# assumptions so AOCS does not silently force a software worldview.
+OPEN_DOMAIN_ASSUMPTIONS = [
+    "The problem statement may be underspecified",
+    "The stated goal may not be the root problem",
+    "The relevant domain must be inferred from evidence, not assumed",
+    "Available evidence may be incomplete, stale, or misleading",
+    "The correct verification method depends on the inferred domain",
+    "Multiple disciplines may be needed to evaluate the problem",
+    "Safety, ethical, legal, or real-world constraints may apply",
+    "The answer may require external validation before action",
+]
+
+
 DOMAIN_ASSUMPTIONS = {
     "software": [
         "The development environment matches production",
@@ -26,13 +39,13 @@ class AssumptionMapper:
     def extract(
         self,
         interpretations: list[Interpretation],
-        domain: str = "software",
+        domain: str | None = None,
         problem: str = "",
     ) -> list[Assumption]:
         assumptions: list[Assumption] = []
 
         # Domain-level assumptions
-        domain_defaults = DOMAIN_ASSUMPTIONS.get(domain, DOMAIN_ASSUMPTIONS["software"])
+        domain_defaults = DOMAIN_ASSUMPTIONS.get(domain or "", OPEN_DOMAIN_ASSUMPTIONS)
         for stmt in domain_defaults:
             assumptions.append(Assumption(
                 statement=stmt,

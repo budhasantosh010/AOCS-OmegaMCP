@@ -10,6 +10,10 @@ Each interpretation MUST change the root cause, scale, or disciplinary lens.
 
 Consider these lenses: {lenses}
 
+If no domain is explicitly provided, infer the domain from the problem itself.
+Do not assume software. Adapt expertise, verification tools, assumptions, and
+failure modes to the inferred domain.
+
 For each interpretation, output JSON:
 ```json
 {{"interpretations": [
@@ -19,14 +23,14 @@ For each interpretation, output JSON:
 
 
 LENSES = [
-    "Hardware / Infrastructure",
-    "Software / Code Logic",
-    "Network / Communication",
-    "Configuration / Environment",
-    "Third-party Service / Dependency",
-    "User Error / Workflow",
-    "Data / Concurrency",
-    "Security / Threat Model",
+    "Domain inference / disciplinary context",
+    "First-principles mechanism",
+    "Evidence / empirical reality",
+    "Systems / infrastructure",
+    "Human workflow / incentives",
+    "Data / measurement / uncertainty",
+    "Safety / ethics / risk",
+    "Unknown frontier / discovery",
 ]
 
 
@@ -36,8 +40,9 @@ class MultiFramer:
     def __init__(self, router: LLMRouter):
         self.router = router
 
-    async def generate(self, problem: str, domain: str = "software") -> list[Interpretation]:
-        user_prompt = f"Problem: {problem}\nDomain: {domain}\nLenses: {', '.join(LENSES)}"
+    async def generate(self, problem: str, domain: str | None = None) -> list[Interpretation]:
+        domain_label = domain or "infer from problem; do not assume software"
+        user_prompt = f"Problem: {problem}\nDomain: {domain_label}\nLenses: {', '.join(LENSES)}"
         system = FRAMER_PROMPT.format(num=5, lenses=", ".join(LENSES))
 
         data = await self.router.call_structured("multi-framer", system, user_prompt)

@@ -45,8 +45,8 @@ class AOCSOrchestrator:
     async def analyze(
         self,
         problem: str,
-        domain: str = "software",
-        risk: str = "medium",
+        domain: str | None = None,
+        risk: str | None = None,
         fractal_depth: int | None = None,
         context: str | None = None,
         max_sub_agents: int = 16,
@@ -70,7 +70,8 @@ class AOCSOrchestrator:
 
             # === CLASSIFICATION ===
             classification = classify(problem, phase0)
-            classification.risk_level = risk or classification.risk_level
+            if risk:
+                classification.risk_level = risk
             self.blackboard.store("classification", classification.model_dump())
             fd = fractal_depth if fractal_depth is not None else classification.fractal_depth
 
@@ -217,8 +218,8 @@ class AOCSOrchestrator:
     async def _maybe_direct_low_risk(
         self,
         problem: str,
-        domain: str,
-        risk: str,
+        domain: str | None,
+        risk: str | None,
         fractal_depth: int | None,
     ) -> AnalysisResult | None:
         """Route obvious direct questions to a single LLM answer, not the deep pipeline."""
@@ -253,7 +254,7 @@ class AOCSOrchestrator:
     def _looks_like_simple_arithmetic(problem: str) -> bool:
         return bool(re.search(r"\b\d+\s*(?:\+|-|\*|/|x|X)\s*\d+\b", problem))
 
-    async def _run_phase0(self, problem: str, domain: str) -> Phase0Result:
+    async def _run_phase0(self, problem: str, domain: str | None) -> Phase0Result:
         """Execute Phase 0: Parser → Multi-Framer → Assumptions → Uncertainty → Root → Deep Test."""
         # Step 1: Parser
         parsed = parse(problem, domain)

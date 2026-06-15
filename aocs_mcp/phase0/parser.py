@@ -3,7 +3,7 @@
 import re
 
 
-def parse(problem: str, domain: str = "software") -> str:
+def parse(problem: str, domain: str | None = None) -> str:
     """Clean and structure the raw problem input.
 
     Extracts explicit request, implied constraints, and missing context.
@@ -12,8 +12,10 @@ def parse(problem: str, domain: str = "software") -> str:
     lines = [line for line in lines if line]
 
     # Build a structured representation
+    domain_label = domain or "auto-infer from problem"
+
     structured = [
-        f"## Parsed Problem (domain: {domain})",
+        f"## Parsed Problem (domain: {domain_label})",
         f"",
         f"### Raw Input",
         f"{problem.strip()}",
@@ -40,6 +42,6 @@ def parse(problem: str, domain: str = "software") -> str:
 
     # Count lines for size estimation
     structured.append(f"- Input size: {len(lines)} lines, {len(problem)} characters")
-    structured.append(f"- Domain: {domain}")
+    structured.append(f"- Domain: {domain_label}")
 
     return "\n".join(structured)

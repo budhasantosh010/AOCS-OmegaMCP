@@ -549,3 +549,83 @@ VerifiedOperationalPath --> [*]
 
 @enduml
 ```
+
+## 2026-06-15 - Open-Domain Request Boundary Correction Delta
+
+```plantuml
+@startuml AOCS_Omega_MCP_Open_Domain_Request_Boundary_2026_06_15
+
+title AOCS Omega MCP - Open-Domain Request Boundary Correction - 2026-06-15
+hide empty description
+
+[*] --> UserRejectsHiddenDefaults
+UserRejectsHiddenDefaults : User states every problem is new and AOCS must not force software/medium defaults.
+
+state "Previous Behavior" as PreviousBehavior {
+  [*] --> AdapterInjectedDomain
+  AdapterInjectedDomain : CLI/MCP/slash command could inject domain=software.
+  AdapterInjectedDomain --> AdapterInjectedRisk
+  AdapterInjectedRisk : CLI/MCP/slash command could inject risk=medium.
+  AdapterInjectedRisk --> SentinelDepth
+  SentinelDepth : CLI used -1 sentinel and MCP used 0 default for fractal depth.
+  SentinelDepth --> ProblemPreShaped
+  ProblemPreShaped : AOCS received a pre-shaped request before Phase 0 reasoning.
+}
+
+UserRejectsHiddenDefaults --> BoundaryRedesigned
+
+state "Corrected Request Boundary" as BoundaryRedesigned {
+  [*] --> DomainOptional
+  DomainOptional : domain omitted means request.domain=null.
+  DomainOptional --> RiskOptional
+  RiskOptional : risk omitted means request.risk=null.
+  RiskOptional --> DepthOptional
+  DepthOptional : fractal_depth omitted means request.fractal_depth=null.
+  DepthOptional --> ExplicitHintsOnly
+  ExplicitHintsOnly : adapters pass domain/risk/depth only when user explicitly gives them.
+}
+
+BoundaryRedesigned --> Phase0OpenDomain
+
+state "Open-Domain Phase 0" as Phase0OpenDomain {
+  [*] --> ParserAutoInfer
+  ParserAutoInfer : Parser prints Domain auto-infer from problem.
+  ParserAutoInfer --> OpenLenses
+  OpenLenses : Multi-Framer uses generic domain/evidence/safety/frontier lenses.
+  OpenLenses --> OpenAssumptions
+  OpenAssumptions : Assumption Mapper uses open-domain assumptions unless domain is explicit.
+}
+
+Phase0OpenDomain --> InternalClassification
+
+state "Internal AOCS Classification" as InternalClassification {
+  [*] --> ClassifierUsesEvidence
+  ClassifierUsesEvidence : Classifier decides Type 1/2/3 and risk after Phase 0.
+  ClassifierUsesEvidence --> RiskMayStillBeMedium
+  RiskMayStillBeMedium : risk=medium may appear as an internal decision, not a caller default.
+}
+
+InternalClassification --> Type3OpenDomain
+
+state "Open-Domain Type 3" as Type3OpenDomain {
+  [*] --> GenericDiscoveryLenses
+  GenericDiscoveryLenses : Type 3 uses Domain Inference, First Principles, Evidence, Systems, Safety.
+  GenericDiscoveryLenses --> NoSoftwareUnlessEvidence
+  NoSoftwareUnlessEvidence : Prompt says do not assume software unless evidence points there.
+}
+
+Type3OpenDomain --> RegressionTests
+
+state "Regression Tests" as RegressionTests {
+  [*] --> OpenDomainTestAdded
+  OpenDomainTestAdded : tests/test_open_domain_defaults.py added.
+  OpenDomainTestAdded --> SuitePassed
+  SuitePassed : python -X utf8 -B -m pytest tests -p no:cacheprovider => 38 passed.
+}
+
+RegressionTests --> CurrentContract
+CurrentContract : Current rule - do not provide domain/risk/fractal_depth unless user explicitly gives them.
+CurrentContract --> [*]
+
+@enduml
+```

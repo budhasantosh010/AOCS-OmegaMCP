@@ -39,14 +39,11 @@ def test_low_risk_arithmetic_uses_direct_route():
     assert router.call_log == [{"role": "direct-answer"}]
 
 
-def test_default_arithmetic_uses_deterministic_route():
+def test_unhinted_arithmetic_uses_direct_llm_route():
     router = FakeRouter()
     result = asyncio.run(
         AOCSOrchestrator(router, config=None).analyze(
             "what is 2+2?",
-            domain="software",
-            risk="medium",
-            fractal_depth=1,
         )
     )
 
@@ -77,6 +74,6 @@ def test_shadow_reroute_is_promoted_to_recommendation():
 
 if __name__ == "__main__":
     test_low_risk_arithmetic_uses_direct_route()
-    test_default_arithmetic_uses_deterministic_route()
+    test_unhinted_arithmetic_uses_direct_llm_route()
     test_shadow_reroute_is_promoted_to_recommendation()
     print("orchestrator direct-route tests passed")

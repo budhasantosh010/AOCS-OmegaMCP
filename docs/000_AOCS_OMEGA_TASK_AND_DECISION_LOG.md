@@ -1317,6 +1317,176 @@ python -m aocs_mcp.cli doctor --no-opencode
 
 All passed.
 
+## 2026-06-15 - Correction: Remove Hidden Software/Medium Defaults
+
+### Trigger
+
+The user rejected the earlier behavior where AOCS silently used `domain=software`,
+`risk=medium`, or a fixed fractal-depth sentinel when the caller did not provide
+those values.
+
+User requirement, restated precisely:
+
+- Every problem is a new problem.
+- AOCS must not force a software worldview unless the user explicitly gives that
+  domain or the problem evidence points there.
+- AOCS must not receive a caller-injected medium risk level just because no risk
+  was provided.
+- AOCS must not rely on slash-command defaults that shape the problem before the
+  engine sees it.
+- The skill structure can guide the engine, but the problem domain, risk, route,
+  and depth must be inferred inside the AOCS pipeline.
+
+### Decision
+
+The public request boundary is now open-domain by default.
+
+This means:
+
+```text
+domain omitted -> request.domain is None
+risk omitted -> request.risk is None
+fractal_depth omitted -> request.fractal_depth is None
+```
+
+This does not mean AOCS has no classification. It means the caller does not
+inject a classification before AOCS runs. After Phase 0, the classifier may still
+decide that a problem is Type 1, Type 2, or Type 3 and assign a risk level based
+on the available framing evidence.
+
+### Code Changes
+
+Updated request/adapters:
+
+- `AOCSRunRequest.domain`: changed from `"software"` to `None`
+- `AOCSRunRequest.risk`: changed from `"medium"` to `None`
+- CLI `--domain`: optional hint only
+- CLI `--risk`: optional hint only
+- CLI `--fractal-depth`: optional hint only; removed `-1` sentinel
+- MCP `aocs_run_full.domain`: optional hint only
+- MCP `aocs_run_full.risk`: optional hint only
+- MCP `aocs_run_full.fractal_depth`: optional hint only
+- `.opencode/commands/aocs-run.md`: now tells the agent not to provide
+  `domain`, `risk`, or `fractal_depth` unless the user explicitly gave them
+- `.claude/commands/aocs-run.md`: same correction
+
+Updated Phase 0:
+
+- Parser now writes `Domain: auto-infer from problem` when no domain hint exists.
+- Multi-Framer lenses are no longer software-specific.
+- Multi-Framer prompt explicitly says not to assume software.
+- Assumption Mapper now uses open-domain assumptions when no domain is given.
+- Software assumptions are still available only when the caller explicitly
+  provides `domain="software"`.
+
+Updated Type 3:
+
+- Type 3 discovery lenses are now generic:
+  `Domain Inference`, `First Principles`, `Evidence and Measurement`,
+  `Systems and Constraints`, `Safety and Consequences`.
+- Type 3 prompt explicitly says to infer the correct discipline and not assume
+  software unless the problem evidence points there.
+
+Updated classification wording:
+
+- Removed wording that said `Default to Type 2`.
+- Type 2 is now described as a classifier decision when the problem is neither
+  clearly established nor clearly frontier-level.
+
+### Important Clarification
+
+Risk values such as `medium` can still appear after classification. That is not
+the same as a caller default.
+
+Bad behavior removed:
+
+```text
+Caller omits risk -> adapter sends risk=medium before AOCS thinks
+```
+
+Allowed behavior:
+
+```text
+Caller omits risk -> AOCS runs Phase 0 -> classifier decides risk=medium
+```
+
+The first one is an outside default. The second one is an internal AOCS decision.
+
+### Tests Added/Updated
+
+Added:
+
+- `tests/test_open_domain_defaults.py`
+
+Updated:
+
+- `tests/test_phase0.py`
+- `tests/test_models.py`
+- `tests/test_runtime.py`
+- `tests/test_orchestrator_direct.py`
+
+The regression test checks:
+
+- parser without domain does not say `software`
+- assumption mapper without domain does not use software assumptions
+- CLI parser leaves domain/risk/fractal-depth absent
+- CLI runtime request preserves those absent values
+
+### Test Run
+
+Full suite:
+
+```powershell
+python -X utf8 -B -m pytest tests -p no:cacheprovider
+```
+
+Result:
+
+```text
+38 passed in 4.74s
+```
+
+### Current Correct Contract
+
+When the user runs:
+
+```powershell
+python -m aocs_mcp.cli run "find the cure of cancer"
+```
+
+the request sent into AOCS is:
+
+```json
+{
+  "domain": null,
+  "risk": null,
+  "fractal_depth": null
+}
+```
+
+AOCS must infer domain/risk/depth internally.
+
+When the user explicitly runs:
+
+```powershell
+python -m aocs_mcp.cli run "debug this Python error" --domain software --risk high --fractal-depth 2
+```
+
+then those values are accepted as user-provided hints.
+
+### Supersedes Earlier Notes
+
+Earlier documentation sections mention using `domain=software`, `risk=medium`,
+or `--risk low --fractal-depth 0` for smoke tests. Those sections remain as
+historical records, but this section supersedes them as the current design rule.
+
+Current rule:
+
+```text
+Do not provide domain/risk/fractal_depth unless the user explicitly gives them.
+Let AOCS infer them from the problem.
+```
+
 ## 2026-06-15 - Correction: Arithmetic Shortcut Must Still Use LLM
 
 ### User correction

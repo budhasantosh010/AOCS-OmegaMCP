@@ -14,8 +14,8 @@ from aocs_mcp.runtime import AOCSRunRequest, AOCSRuntime
 async def _fake_analyze(
     self,
     problem,
-    domain="software",
-    risk="medium",
+    domain=None,
+    risk=None,
     fractal_depth=None,
     context=None,
     max_sub_agents=16,
