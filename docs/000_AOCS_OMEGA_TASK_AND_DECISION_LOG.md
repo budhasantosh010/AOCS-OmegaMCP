@@ -772,3 +772,100 @@ Two tests that write temporary files needed to be run outside the sandbox becaus
 ### Decision
 
 Proceed to stage, commit, and push the current version.
+
+## 2026-06-15 - Real OpenCode MCP Smoke Test
+
+### User request
+
+The user asked to test the project with the real OpenCode MCP server to confirm whether it actually works.
+
+### Environment
+
+- Repository: `C:\Users\Lenovo\Music\AOCS-Ω\AOCS Main MCP\AOCS MCP`
+- Branch: `main`
+- Local repo status before test: clean and aligned with `origin/main`
+- OpenCode binary: `C:\Users\Lenovo\AppData\Roaming\npm\opencode.cmd`
+- OpenCode version: `1.16.0`
+- OpenCode auth list showed real configured credentials, including OpenCode Go.
+- `OPENCODE_API_KEY` was not set in the shell environment used by the test.
+
+### Test 1: OpenCode MCP server discovery
+
+Command intent:
+
+```text
+Ask OpenCode to list MCP servers from the real project config.
+```
+
+Observed result:
+
+```text
+MCP Servers
+- aocs-omega connected
+  python -m aocs_mcp
+1 server(s)
+```
+
+Conclusion:
+
+OpenCode can discover and start the AOCS MCP server from `opencode.jsonc`.
+
+### Test 2: Real OpenCode agent invokes AOCS MCP tool
+
+Command intent:
+
+```text
+Run a real OpenCode agent session and ask it to call the aocs-omega MCP tool aocs_run_full exactly once.
+```
+
+The test did not use auto-approved permissions. An attempted command with broad auto-approval was rejected by the execution safety layer, so the safer version was run without bypassing permissions.
+
+Observed OpenCode output:
+
+```text
+MCP_TOOL_RESULT=error: OPENCODE_API_KEY not set in environment
+build · deepseek-v4-flash
+⚙ aocs-omega_aocs_run_full {"problem":"what is 2+2?","domain":"software","risk":"low","fractal_depth":0,"max_sub_agents":1}
+```
+
+### Interpretation
+
+This is a partial success and a precise failure.
+
+What worked:
+
+- OpenCode started normally.
+- OpenCode used the requested model session.
+- OpenCode saw the `aocs-omega` MCP server.
+- OpenCode invoked the `aocs_run_full` MCP tool.
+- The tool call reached the AOCS runtime.
+
+What failed:
+
+- The AOCS runtime tried to call the configured OpenCode Go direct HTTPS provider.
+- The runtime did not receive `OPENCODE_API_KEY` in its process environment.
+- Therefore the AOCS model call failed with: `OPENCODE_API_KEY not set in environment`.
+
+### Decision
+
+The OpenCode MCP integration itself works.
+
+The full end-to-end AOCS run through OpenCode MCP requires starting OpenCode from a shell where `OPENCODE_API_KEY` is set, or changing future configuration/provider logic so AOCS can read a supported credential source without storing secrets in the repo.
+
+For this version, do not read OpenCode's private auth file and do not store API keys in config files. Keep the key requirement explicit and environment-based.
+
+### Next valid test
+
+Run from a shell where the environment variable is set:
+
+```powershell
+$env:OPENCODE_API_KEY = "..."
+opencode mcp list
+opencode run "Use the aocs-omega MCP server tool aocs_run_full exactly once. Input: problem='what is 2+2?', domain='software', risk='low', fractal_depth=0, max_sub_agents=1. Return only the final answer."
+```
+
+Expected successful result:
+
+```text
+4
+```

@@ -273,3 +273,35 @@ ReadyToCommitAndPush : Current code, adapters, tests, and docs are ready for Git
 
 @enduml
 ```
+
+## 2026-06-15 - Real OpenCode MCP Smoke Test Delta
+
+```plantuml
+@startuml AOCS_Omega_MCP_Real_OpenCode_Smoke_2026_06_15
+
+title AOCS Omega MCP - Real OpenCode MCP Smoke Test - 2026-06-15
+hide empty description
+
+[*] --> RepoClean
+RepoClean : main matched origin/main before test.
+RepoClean --> OpenCodeDetected
+OpenCodeDetected : OpenCode 1.16.0 was installed and auth list showed real credentials.
+OpenCodeDetected --> EnvKeyMissing
+EnvKeyMissing : OPENCODE_API_KEY was not set in the shell environment.
+EnvKeyMissing --> MCPListRun
+MCPListRun : opencode mcp list was run from the project repo.
+MCPListRun --> MCPConnected
+MCPConnected : aocs-omega connected through python -m aocs_mcp.
+MCPConnected --> AgentSmokeRun
+AgentSmokeRun : opencode run asked real agent to call aocs_run_full once.
+AgentSmokeRun --> ToolInvoked
+ToolInvoked : OpenCode invoked aocs-omega_aocs_run_full with the low-risk 2+2 input.
+ToolInvoked --> RuntimeProviderError
+RuntimeProviderError : AOCS runtime returned OPENCODE_API_KEY not set in environment.
+RuntimeProviderError --> PartialSuccessConclusion
+PartialSuccessConclusion : MCP integration works; full run needs OPENCODE_API_KEY supplied to OpenCode's environment.
+PartialSuccessConclusion --> NextTestReady
+NextTestReady : Set OPENCODE_API_KEY in shell, then rerun OpenCode agent MCP smoke test.
+
+@enduml
+```
