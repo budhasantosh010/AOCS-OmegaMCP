@@ -169,6 +169,7 @@ class AOCSOrchestrator:
             # === FINAL VERDICT ===
             confidence = quality_subject.judge.confidence if quality_subject else 50.0
             verdict_str = self._determine_verdict(confidence, quality_gates, observer_result)
+            verdict_str = self._apply_shadow_escalation(verdict_str, shadow)
             total_llm_calls = getattr(self.router, "call_count", self.llm_call_count)
 
             # === FLYWHEEL ===
@@ -197,7 +198,7 @@ class AOCSOrchestrator:
                 memory_audit=audit,
                 confidence=round(confidence, 1),
                 verdict=verdict_str,
-                recommendations=self._build_recommendations(verdict_str, audit),
+                recommendations=self._build_recommendations(verdict_str, audit, shadow),
             )
 
             Flywheel().capture(problem, analysis_result, self.blackboard)
@@ -312,8 +313,26 @@ class AOCSOrchestrator:
         return "flag_for_review"
 
     @staticmethod
-    def _build_recommendations(verdict: str, audit: AuditResult) -> list[str]:
+    def _apply_shadow_escalation(verdict: str, shadow: ShadowResult | None) -> str:
+        """Do not accept when the independent shadow route is more conservative."""
+        if not shadow or not shadow.divergence_detected:
+            return verdict
+        if shadow.safe_path.startswith("Use shadow") and verdict == "accept":
+            return "flag_for_review"
+        return verdict
+
+    @staticmethod
+    def _build_recommendations(
+        verdict: str,
+        audit: AuditResult,
+        shadow: ShadowResult | None = None,
+    ) -> list[str]:
         recs = []
+        if shadow and shadow.divergence_detected and shadow.safe_path.startswith("Use shadow"):
+            recs.append(
+                "Shadow orchestrator recommends safer reroute: "
+                f"{shadow.safe_path}. Do not act on the current route without review."
+            )
         if verdict == "reject":
             recs.append("Return to Phase 0: reframe the problem completely")
             recs.append("Consider re-classification to a different Type")

@@ -230,6 +230,43 @@ VersionPublished : Remote repository contains this documented AOCS runtime versi
 @enduml
 ```
 
+## 2026-06-15 - Shadow Reroute Promotion Delta
+
+```plantuml
+@startuml AOCS_Omega_Shadow_Reroute_Promotion_2026_06_15
+
+title AOCS Omega MCP - Shadow Reroute Promotion - 2026-06-15
+hide empty description
+
+[*] --> UserTranscriptChecked
+UserTranscriptChecked : User transcript shows doctor OK, 2+2 direct-answer OK, and AGI deep run completed.
+
+UserTranscriptChecked --> AGIRunAnalyzed
+AGIRunAnalyzed : AGI run route=type2, verdict=flag_for_review, confidence=88, total_llm_calls=11.
+
+AGIRunAnalyzed --> ShadowFindsCriticalType3
+ShadowFindsCriticalType3 : Shadow orchestrator safe_path=Use shadow: type3 (risk critical).
+
+ShadowFindsCriticalType3 --> GapFound
+GapFound : Shadow warning was recorded but not promoted strongly enough into final recommendations.
+
+GapFound --> OrchestratorUpdated
+OrchestratorUpdated : _build_recommendations now includes conservative shadow reroute when safe_path uses shadow.
+
+OrchestratorUpdated --> AcceptDowngradeRule
+AcceptDowngradeRule : _apply_shadow_escalation downgrades accept to flag_for_review when shadow says safer route.
+
+AcceptDowngradeRule --> RegressionTestAdded
+RegressionTestAdded : Test asserts Type 3 critical shadow reroute appears in recommendations.
+
+RegressionTestAdded --> TestsPassed
+TestsPassed : orchestrator, runtime, and router tests passed.
+
+TestsPassed --> [*]
+
+@enduml
+```
+
 ## 2026-06-15 - Beginner Arithmetic Smoke Test Fix Delta
 
 ```plantuml

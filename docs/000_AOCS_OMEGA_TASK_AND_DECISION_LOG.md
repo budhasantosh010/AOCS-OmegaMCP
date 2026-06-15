@@ -1403,3 +1403,106 @@ total_llm_calls == 1
 ```
 
 This prevents future regressions where code secretly answers instead of calling the LLM role.
+
+## 2026-06-15 - Check User Transcript And Promote Shadow Reroute
+
+### User request
+
+The user attached a terminal transcript and asked to check it.
+
+### What the transcript showed
+
+The `doctor` command now worked:
+
+```text
+[OK] opencode binary: 1.16.0
+[OK] opencode mcp: aocs-omega connected
+```
+
+The `2+2` command now followed the corrected model-driven direct route:
+
+```text
+problem_type: type1
+route_taken: direct-answer
+total_llm_calls: 1
+specialist_proposal: 4.
+verdict: accept
+confidence: 95.0
+```
+
+Conclusion:
+
+The simple direct-answer route is now correct: code routes, LLM answers.
+
+### Typo observed
+
+The user accidentally typed:
+
+```powershell
+ython -m aocs_mcp.cli run "how do we make AGI ?"
+```
+
+PowerShell correctly failed because `ython` is not a command. The corrected command is:
+
+```powershell
+python -m aocs_mcp.cli run "how do we make AGI"
+```
+
+### AGI run result
+
+The AGI run completed:
+
+```text
+route_taken: type2
+problem_type: type2
+total_llm_calls: 11
+verdict: flag_for_review
+confidence: 88.0
+```
+
+The shadow orchestrator independently classified the problem as:
+
+```text
+shadow problem_type: type3
+shadow risk_level: critical
+safe_path: Use shadow: type3 (risk critical)
+```
+
+### Gap found
+
+AOCS recorded the shadow warning, but it did not promote that warning strongly enough into final recommendations.
+
+This matters because a broad question like `how do we make AGI` can be safety-critical and discovery-oriented. If the shadow route says Type 3 critical, the final output must make that conservative route obvious to the user.
+
+### Fix
+
+The orchestrator now promotes a conservative shadow reroute into recommendations.
+
+If:
+
+```text
+shadow.divergence_detected == true
+shadow.safe_path starts with "Use shadow"
+```
+
+then recommendations include:
+
+```text
+Shadow orchestrator recommends safer reroute: Use shadow: type3 (risk critical). Do not act on the current route without review.
+```
+
+If the main route verdict was `accept`, a shadow reroute also downgrades it to `flag_for_review`.
+
+### Tests added
+
+`tests/test_orchestrator_direct.py` now checks that a Type 3 critical shadow reroute is promoted into recommendations.
+
+### Tests run
+
+```bash
+python tests/test_orchestrator_direct.py
+python tests/test_runtime.py
+python tests/test_router.py
+```
+
+All passed.
