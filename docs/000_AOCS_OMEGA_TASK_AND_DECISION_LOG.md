@@ -1317,6 +1317,250 @@ python -m aocs_mcp.cli doctor --no-opencode
 
 All passed.
 
+## 2026-06-15 - Independent AOCS Dashboard and Visible Agent Answers
+
+### Trigger
+
+The user clarified that answer visibility must belong to AOCS itself, not to
+OpenCode, Claude, Codex, Cursor, or any outer coding agent.
+
+User requirement:
+
+- AOCS should be viewable independently.
+- The user should be able to see what happened inside a run.
+- The view should show which AOCS agent ran and what answer/output it produced.
+- This visual representation is part of the AOCS engine, not part of a coding
+  agent adapter.
+
+### Decision
+
+Add an AOCS-owned local dashboard server.
+
+The dashboard is launched with:
+
+```powershell
+aocs dashboard
+```
+
+or:
+
+```powershell
+python -m aocs_mcp.cli dashboard
+```
+
+Default URL:
+
+```text
+http://127.0.0.1:8765/
+```
+
+### Why This Design
+
+The dashboard reads `.aocs/runs/` artifacts directly.
+
+That means:
+
+- OpenCode does not need to display the run.
+- Claude Code does not need to display the run.
+- Codex does not need to display the run.
+- Cursor does not need to display the run.
+- Any future coding agent can trigger AOCS while AOCS still owns its own visual
+  audit trail.
+
+This preserves the architecture rule:
+
+```text
+Adapters are buttons. AOCS is the machine.
+```
+
+### Code Added
+
+New file:
+
+```text
+aocs_mcp/dashboard.py
+```
+
+New CLI command:
+
+```text
+aocs dashboard
+```
+
+Dashboard endpoints:
+
+```text
+GET /              browser UI
+GET /api/runs      list persisted runs
+GET /api/run?id=   load one run with derived agent timeline
+```
+
+New test:
+
+```text
+tests/test_dashboard.py
+```
+
+### What The Dashboard Shows
+
+The dashboard shows:
+
+- run history
+- run directory
+- problem text
+- final verdict
+- confidence
+- route taken
+- problem type
+- total LLM calls
+- final recommendations
+- agent timeline
+- raw summary
+
+The agent timeline maps raw AOCS artifacts into readable steps such as:
+
+- Direct Answer
+- Multi-Framer
+- Root Problem Extractor
+- Deep Test
+- Specialist
+- Red Team
+- Contrarian
+- Deception Detector
+- Judge
+- Quality Gates
+- Observer
+- Shadow Orchestrator
+- Type 3 Lens Agent
+- Type 3 First Principles
+- Type 3 Hypothesis Generator
+- Memory Audit
+
+### Trace Preview Change
+
+Before this change, `trace.json` stored role names, timing, providers, models,
+prompt hashes, and response length, but not visible model output.
+
+Now future traces store a local response preview:
+
+```json
+{
+  "response_preview": "first part of the model answer..."
+}
+```
+
+Default preview size:
+
+```json
+{
+  "runtime": {
+    "trace_response_preview_chars": 2000
+  }
+}
+```
+
+This is local-only in `.aocs/runs`. It makes the dashboard useful without asking
+the coding agent to remember or display the AOCS internal run.
+
+To disable previews:
+
+```json
+{
+  "runtime": {
+    "trace_response_preview_chars": 0
+  }
+}
+```
+
+### OpenCode Global Status Observed
+
+OpenCode global config path on this laptop:
+
+```text
+C:\Users\Lenovo\.config\opencode\opencode.jsonc
+```
+
+Observation:
+
+- A global `aocs-omega` MCP entry already exists.
+- It points to Python 3.10.
+- Python 3.10 has `aocs-mcp-server` installed editable from this repo.
+- `opencode mcp list` failed during inspection with a local database
+  `PRAGMA wal_checkpoint(PASSIVE)` error, so no automatic global config rewrite
+  was performed.
+
+Security observation:
+
+- The global OpenCode config contains a plaintext provider key.
+- Do not paste that file into chats or commit it to GitHub.
+
+### Verification
+
+Focused tests:
+
+```powershell
+python -X utf8 -B -m pytest tests/test_dashboard.py tests/test_router.py tests/test_runtime.py tests/test_open_domain_defaults.py -p no:cacheprovider
+```
+
+Result:
+
+```text
+8 passed
+```
+
+Full suite:
+
+```powershell
+python -X utf8 -B -m pytest tests -p no:cacheprovider
+```
+
+Result:
+
+```text
+40 passed in 3.80s
+```
+
+Dashboard server started:
+
+```text
+http://127.0.0.1:8765/
+```
+
+Verified endpoint:
+
+```text
+GET http://127.0.0.1:8765/api/runs
+```
+
+Result:
+
+- endpoint responded successfully
+- it listed existing `.aocs/runs` records
+
+### Global OpenCode Slash Command Installed
+
+The global OpenCode command file was installed at:
+
+```text
+C:\Users\Lenovo\.config\opencode\commands\aocs-run.md
+```
+
+This makes `/aocs-run` available in normal/global OpenCode sessions, not only in
+the AOCS project folder.
+
+The command content matches the project-scoped `.opencode/commands/aocs-run.md`
+and tells OpenCode to call only the canonical MCP tool:
+
+```text
+aocs_run_full
+```
+
+It also preserves the open-domain rule:
+
+```text
+Do not provide domain, risk, or fractal_depth unless the user explicitly gave them.
+```
+
 ## 2026-06-15 - Correction: Remove Hidden Software/Medium Defaults
 
 ### Trigger

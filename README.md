@@ -104,6 +104,43 @@ summary.md     human-readable summary
 This is intentionally separate from Claude/OpenCode/Codex/Cursor settings and
 databases.
 
+Open the AOCS-owned visual dashboard:
+
+```bash
+aocs dashboard
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8765/
+```
+
+The dashboard is independent from coding agents. It reads AOCS run artifacts and
+shows:
+
+- run history
+- final verdict and confidence
+- route and problem type
+- agent timeline
+- visible answers from Specialist, Red Team, Contrarian, Judge, Observer, Shadow
+  Orchestrator, Type 3 agents, and direct-answer runs
+- raw summary
+
+By default, future `trace.json` files store a local response preview for each
+model call:
+
+```json
+{
+  "runtime": {
+    "trace_response_preview_chars": 2000
+  }
+}
+```
+
+Set this value to `0` in `config/models.local.json` if you want traces to keep
+only metadata and prompt hashes.
+
 Override the run directory:
 
 ```bash
@@ -257,6 +294,16 @@ Optional global MCP config command:
 ```bash
 opencode mcp add aocs-omega -- "python" "-m" "aocs_mcp"
 ```
+
+On Windows, the global OpenCode config file is usually:
+
+```text
+C:\Users\<you>\.config\opencode\opencode.jsonc
+```
+
+Global config means the MCP server appears in the normal OpenCode GUI/TUI across
+projects. Project config means it appears only inside that project. Prefer
+project config until you intentionally choose global setup.
 
 ### Claude Code
 

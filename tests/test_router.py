@@ -34,6 +34,7 @@ def test_router_records_trace_and_enforces_budget():
         assert router.call_count == 1
         assert router.call_log[0]["role"] == "specialist"
         assert router.call_log[0]["status"] == "ok"
+        assert router.call_log[0]["response_preview"] == '{"ok": true}'
         assert "system_prompt_sha256" in router.call_log[0]
 
         try:

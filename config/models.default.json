@@ -3,7 +3,8 @@
   "_comment": "Default model routing — checked into git. Copy to models.local.json to override.",
   "runtime": {
     "persist_runs": true,
-    "run_dir": ".aocs/runs"
+    "run_dir": ".aocs/runs",
+    "trace_response_preview_chars": 2000
   },
   "host_cli": {
     "enabled": true,

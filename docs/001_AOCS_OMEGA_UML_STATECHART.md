@@ -230,6 +230,97 @@ VersionPublished : Remote repository contains this documented AOCS runtime versi
 @enduml
 ```
 
+## 2026-06-15 - Global OpenCode Slash Command Install Delta
+
+```plantuml
+@startuml AOCS_Omega_Global_OpenCode_Command_2026_06_15
+
+title AOCS Omega MCP - Global OpenCode Command Install - 2026-06-15
+hide empty description
+
+[*] --> GlobalMcpAlreadyPresent
+GlobalMcpAlreadyPresent : Global OpenCode config already contains aocs-omega MCP entry.
+
+GlobalMcpAlreadyPresent --> GlobalCommandMissing
+GlobalCommandMissing : C:/Users/Lenovo/.config/opencode/commands/aocs-run.md did not exist.
+
+GlobalCommandMissing --> CommandCopied
+CommandCopied : Project .opencode/commands/aocs-run.md copied into global OpenCode commands folder.
+
+CommandCopied --> CommandVerified
+CommandVerified : Global /aocs-run content verified.
+
+CommandVerified --> AvailableEverywhere
+AvailableEverywhere : Normal OpenCode GUI sessions can use /aocs-run globally.
+
+AvailableEverywhere --> [*]
+
+@enduml
+```
+
+## 2026-06-15 - Independent AOCS Dashboard Delta
+
+```plantuml
+@startuml AOCS_Omega_MCP_Independent_Dashboard_2026_06_15
+
+title AOCS Omega MCP - Independent Dashboard - 2026-06-15
+hide empty description
+
+[*] --> UserClarifiesVisibility
+UserClarifiesVisibility : User wants run visibility inside AOCS itself, not inside any coding-agent UI.
+
+UserClarifiesVisibility --> DashboardDecision
+DashboardDecision : Add AOCS-owned local dashboard server.
+
+state "AOCS Runtime Region" as RuntimeRegion {
+  [*] --> RunExecutes
+  RunExecutes : AOCSRunRequest enters standalone runtime.
+  RunExecutes --> AgentsRun
+  AgentsRun : Router calls Direct Answer, Multi-Framer, Specialist, Red Team, Judge, Observer, Shadow, Type 3 agents as needed.
+  AgentsRun --> ArtifactsWritten
+  ArtifactsWritten : request.json, status.json, trace.json, result.json, summary.md written under .aocs/runs.
+  ArtifactsWritten --> TracePreviewStored
+  TracePreviewStored : trace.json stores response_preview up to runtime.trace_response_preview_chars.
+}
+
+state "Dashboard Server Region" as DashboardRegion {
+  [*] --> DashboardCommand
+  DashboardCommand : User runs aocs dashboard.
+  DashboardCommand --> HttpServerStarted
+  HttpServerStarted : Local server binds 127.0.0.1:8765 by default.
+  HttpServerStarted --> RunsEndpoint
+  RunsEndpoint : GET /api/runs lists persisted run summaries.
+  RunsEndpoint --> RunEndpoint
+  RunEndpoint : GET /api/run?id=... loads result, trace, summary, and derived timeline.
+}
+
+state "Browser UI Region" as BrowserRegion {
+  [*] --> BrowserLoads
+  BrowserLoads : Browser opens http://127.0.0.1:8765/.
+  BrowserLoads --> RunHistoryShown
+  RunHistoryShown : UI shows run history and run directory.
+  RunHistoryShown --> SelectedRunShown
+  SelectedRunShown : UI shows verdict, confidence, route, type, calls, recommendation.
+  SelectedRunShown --> AgentTimelineShown
+  AgentTimelineShown : UI shows which AOCS agent ran and what answer/output it produced.
+}
+
+DashboardDecision --> RuntimeRegion
+DashboardDecision --> DashboardRegion
+DashboardDecision --> BrowserRegion
+
+RuntimeRegion --> IndependentVisibility
+DashboardRegion --> IndependentVisibility
+BrowserRegion --> IndependentVisibility
+IndependentVisibility : AOCS owns its visual audit trail independently of OpenCode, Claude, Codex, Cursor, or future agents.
+
+IndependentVisibility --> Tests
+Tests : Full suite passed - 40 tests.
+Tests --> [*]
+
+@enduml
+```
+
 ## 2026-06-15 - Shadow Reroute Promotion Delta
 
 ```plantuml

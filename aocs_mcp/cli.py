@@ -3,7 +3,9 @@
 import argparse
 import asyncio
 import json
+from pathlib import Path
 
+from aocs_mcp.dashboard import default_run_dir, serve_dashboard
 from aocs_mcp.doctor import checks_to_json, checks_to_dict, format_checks, run_doctor
 from aocs_mcp.runtime import AOCSRunRequest, AOCSRuntime
 
@@ -33,6 +35,12 @@ async def _doctor(args: argparse.Namespace) -> int:
     return 1 if checks_to_dict(checks)["failures"] else 0
 
 
+async def _dashboard(args: argparse.Namespace) -> int:
+    run_dir = Path(args.run_dir) if args.run_dir else default_run_dir()
+    serve_dashboard(args.host, args.port, run_dir)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="aocs")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -52,6 +60,12 @@ def build_parser() -> argparse.ArgumentParser:
     doctor.add_argument("--json", action="store_true", help="Print machine-readable JSON")
     doctor.add_argument("--no-opencode", action="store_true", help="Skip OpenCode binary and MCP checks")
     doctor.set_defaults(func=_doctor)
+
+    dashboard = sub.add_parser("dashboard", help="Start the local AOCS run dashboard")
+    dashboard.add_argument("--host", default="127.0.0.1", help="Dashboard bind host")
+    dashboard.add_argument("--port", type=int, default=8765, help="Dashboard port")
+    dashboard.add_argument("--run-dir", default=None, help="Run artifact directory to view")
+    dashboard.set_defaults(func=_dashboard)
 
     return parser
 
