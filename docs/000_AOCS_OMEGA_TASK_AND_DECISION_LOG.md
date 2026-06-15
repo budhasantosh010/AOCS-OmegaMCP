@@ -1132,3 +1132,101 @@ Result: warn (0 fail, 1 warn)
 Interpretation:
 
 The local setup is structurally valid. The only warning is expected because no model provider API key was set in the shell used for this diagnostic run.
+
+## 2026-06-15 - Beginner No-Install Test Confusion And Doctor Encoding Fix
+
+### User request
+
+The user tried the no-install command:
+
+```powershell
+python -m aocs_mcp.cli doctor
+```
+
+and asked why the output looked wrong.
+
+### Problem 1: `doctor` crashed on Windows text decoding
+
+Observed error:
+
+```text
+UnicodeDecodeError: 'charmap' codec can't decode byte ...
+AttributeError: 'NoneType' object has no attribute 'strip'
+```
+
+Cause:
+
+`aocs doctor` runs `opencode mcp list` internally. OpenCode prints some Unicode symbols in its output. Windows PowerShell / Python was trying to decode that output using the local `cp1252` encoding, which could not decode one of the bytes.
+
+Then Python's subprocess output became `None`, and our code tried to call `.strip()` on `None`.
+
+Fix:
+
+`aocs_mcp/doctor.py` now runs subprocess checks with:
+
+```python
+encoding="utf-8"
+errors="replace"
+```
+
+and safely handles empty output:
+
+```python
+(proc.stdout or "").strip()
+```
+
+Result after fix:
+
+```text
+[OK] opencode binary: 1.16.0
+[OK] opencode mcp: aocs-omega connected
+```
+
+### Problem 2: `python -m aocs_mcp.cli run "what is 2+2?"` used the deep default route
+
+Observed behavior:
+
+The user ran:
+
+```powershell
+python -m aocs_mcp.cli run "what is 2+2?"
+```
+
+That command uses the default CLI settings:
+
+```text
+risk: medium
+fractal_depth: 1
+```
+
+Because of those defaults, AOCS treated `2+2` as a medium-risk analysis problem instead of a trivial arithmetic smoke test. It ran the deeper Type 2 pipeline and produced over-analysis.
+
+Correct beginner smoke-test command:
+
+```powershell
+python -m aocs_mcp.cli run "what is 2+2?" --risk low --fractal-depth 0 --max-sub-agents 1
+```
+
+Reason:
+
+```text
+--risk low
+```
+
+tells AOCS this is safe and simple.
+
+```text
+--fractal-depth 0
+```
+
+tells AOCS not to do recursive deep analysis.
+
+```text
+--max-sub-agents 1
+```
+
+keeps the model-call budget small.
+
+### Important security note
+
+The user's pasted terminal transcript included an API key. Any API key pasted into chat or a text file should be considered exposed and rotated before serious use.

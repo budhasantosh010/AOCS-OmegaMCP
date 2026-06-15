@@ -54,6 +54,8 @@ def _run_command(args: list[str], cwd: Path) -> tuple[int, str]:
             args,
             cwd=str(cwd),
             text=True,
+            encoding="utf-8",
+            errors="replace",
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             timeout=45,
@@ -63,7 +65,7 @@ def _run_command(args: list[str], cwd: Path) -> tuple[int, str]:
         return 127, f"{args[0]} not found"
     except subprocess.TimeoutExpired:
         return 124, "command timed out"
-    return proc.returncode, proc.stdout.strip()
+    return proc.returncode, (proc.stdout or "").strip()
 
 
 def run_doctor(*, include_opencode: bool = True) -> list[DoctorCheck]:

@@ -230,6 +230,43 @@ VersionPublished : Remote repository contains this documented AOCS runtime versi
 @enduml
 ```
 
+## 2026-06-15 - No-Install Test Confusion And Doctor Encoding Fix Delta
+
+```plantuml
+@startuml AOCS_Omega_NoInstall_Doctor_Fix_2026_06_15
+
+title AOCS Omega MCP - No-Install Test Confusion And Doctor Fix - 2026-06-15
+hide empty description
+
+[*] --> UserRunsNoInstallDoctor
+UserRunsNoInstallDoctor : User runs python -m aocs_mcp.cli doctor from PowerShell.
+
+UserRunsNoInstallDoctor --> UnicodeDecodeCrash
+UnicodeDecodeCrash : Python subprocess decodes OpenCode output with cp1252 and crashes on Unicode byte.
+
+UnicodeDecodeCrash --> StdoutNoneCrash
+StdoutNoneCrash : subprocess stdout becomes None and doctor calls .strip() on None.
+
+StdoutNoneCrash --> DoctorFixed
+DoctorFixed : _run_command uses UTF-8, errors=replace, and (stdout or '').strip().
+
+DoctorFixed --> UserRunsDefaultTwoPlusTwo
+UserRunsDefaultTwoPlusTwo : User runs python -m aocs_mcp.cli run "what is 2+2?"
+
+UserRunsDefaultTwoPlusTwo --> DeepDefaultRoute
+DeepDefaultRoute : Default risk=medium and fractal_depth=1 cause Type 2 over-analysis.
+
+DeepDefaultRoute --> CorrectSmokeCommand
+CorrectSmokeCommand : Use --risk low --fractal-depth 0 --max-sub-agents 1 for simple smoke tests.
+
+CorrectSmokeCommand --> SecurityReminder
+SecurityReminder : Pasted API keys in chat/transcripts should be rotated.
+
+SecurityReminder --> [*]
+
+@enduml
+```
+
 ## 2026-06-15 - Setup Hardening And Coauthor Check Delta
 
 ```plantuml
