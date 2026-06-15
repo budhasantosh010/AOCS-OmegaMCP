@@ -235,7 +235,7 @@ Project-scoped MCP config in `opencode.jsonc`:
         "PYTHONDONTWRITEBYTECODE": "1"
       },
       "enabled": true,
-      "timeout": 30000
+      "timeout": 300000
     }
   }
 }

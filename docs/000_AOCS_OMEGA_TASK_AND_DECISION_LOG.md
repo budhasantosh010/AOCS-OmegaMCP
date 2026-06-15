@@ -869,3 +869,138 @@ Expected successful result:
 ```text
 4
 ```
+
+## 2026-06-15 - Real OpenCode Chat-Style MCP Test With API Key
+
+### User request
+
+The user asked to set the OpenCode Go API key and run the test like a real OpenCode GUI/chat problem-solving session.
+
+### Security handling
+
+The API key was passed only into the process environment for the test command. It was not written into repo files, documentation, Git config, or OpenCode project config.
+
+### First realistic test result
+
+The first realistic test asked OpenCode to call `aocs_run_full` for this medium-risk architecture question:
+
+```text
+A beginner is deciding whether AOCS should be a standalone runtime with MCP adapters or only a Markdown skill. Give the practical recommendation and why.
+```
+
+Observed result:
+
+```text
+MCP error -32001: Request timed out
+```
+
+OpenCode then manually improvised using the Markdown skill. That fallback behavior is not acceptable for deterministic AOCS because it means the outer coding agent is again doing the reasoning manually instead of letting the runtime enforce the workflow.
+
+### Decision: increase OpenCode MCP timeout
+
+The project-scoped OpenCode MCP timeout was changed from:
+
+```json
+"timeout": 30000
+```
+
+to:
+
+```json
+"timeout": 300000
+```
+
+Reason: 30 seconds is too short for a real AOCS run with multiple model calls. Five minutes is a more realistic project default for medium-depth AOCS analysis.
+
+Files updated:
+
+- `opencode.jsonc`
+- `README.md`
+
+### Strict low-risk end-to-end test
+
+The next test used strict instructions:
+
+- OpenCode must call `aocs_run_full` exactly once.
+- OpenCode must not read or manually emulate the AOCS Markdown skill.
+- If the tool fails, OpenCode must return `MCP_FAILED`.
+- If the tool succeeds, OpenCode must return `MCP_SUCCESS`.
+
+Input:
+
+```text
+problem: what is 2+2?
+domain: software
+risk: low
+fractal_depth: 0
+max_sub_agents: 1
+```
+
+Observed OpenCode output:
+
+```text
+MCP_SUCCESS=4.
+```
+
+AOCS artifact:
+
+```text
+run_id: 20260615T050331Z-61a33850
+status: completed
+verdict: accept
+confidence: 99.0
+total_llm_calls: 1
+route: direct-low-risk
+```
+
+Conclusion: the real chain works for the low-risk deterministic route:
+
+```text
+OpenCode chat -> MCP tool -> AOCS runtime -> OpenCode Go API -> final answer
+```
+
+### Strict realistic architecture test
+
+Input:
+
+```text
+problem: A beginner is deciding whether AOCS should be a standalone runtime with MCP adapters or only a Markdown skill. Give the practical recommendation and why.
+domain: software architecture
+risk: medium
+fractal_depth: 1
+max_sub_agents: 12
+```
+
+Observed OpenCode output:
+
+```text
+MCP_SUCCESS
+
+The AOCS-Omega pipeline ran 11 LLM calls across 5 lenses. The final recommendation was context-dependent: for a beginner, start with a Markdown skill for simplicity and fast iteration, but design the rendering layer to be swappable so migration to a standalone runtime is easy later. Confidence: 90%; verdict flagged for human review.
+```
+
+AOCS artifact:
+
+```text
+run_id: 20260615T050411Z-56ffec8b
+status: completed
+verdict: flag_for_review
+confidence: 90.0
+total_llm_calls: 11
+route: type2
+problem_type: type2
+```
+
+### Final conclusion from this test
+
+The real OpenCode chat-style MCP path works when:
+
+1. `OPENCODE_API_KEY` is present in the environment before OpenCode starts.
+2. The OpenCode MCP timeout is long enough for the AOCS runtime.
+3. The prompt explicitly forbids manual fallback to the Markdown skill when testing deterministic execution.
+
+Operationally verified path:
+
+```text
+OpenCode agent -> aocs-omega MCP server -> aocs_run_full -> AOCSRuntime -> LLMRouter -> OpenCode Go direct HTTPS -> AOCS result -> OpenCode summary
+```

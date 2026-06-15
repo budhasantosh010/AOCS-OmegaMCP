@@ -305,3 +305,49 @@ NextTestReady : Set OPENCODE_API_KEY in shell, then rerun OpenCode agent MCP smo
 
 @enduml
 ```
+
+## 2026-06-15 - Real OpenCode Chat-Style MCP Success Delta
+
+```plantuml
+@startuml AOCS_Omega_MCP_Real_OpenCode_Chat_Success_2026_06_15
+
+title AOCS Omega MCP - Real OpenCode Chat-Style MCP Success - 2026-06-15
+hide empty description
+
+[*] --> UserRequestsRealChatTest
+UserRequestsRealChatTest : Test should behave like OpenCode GUI/chat problem solving.
+
+UserRequestsRealChatTest --> ApiKeyProcessEnv
+ApiKeyProcessEnv : OPENCODE_API_KEY is supplied only to the process environment.
+
+ApiKeyProcessEnv --> FirstMediumRun
+FirstMediumRun : OpenCode calls aocs_run_full for medium architecture question.
+
+FirstMediumRun --> TimeoutFailure
+TimeoutFailure : MCP error -32001 Request timed out at 30000 ms.
+
+TimeoutFailure --> BadManualFallbackObserved
+BadManualFallbackObserved : OpenCode manually emulated AOCS using Markdown skill after timeout.
+
+BadManualFallbackObserved --> TimeoutIncreased
+TimeoutIncreased : Project OpenCode MCP timeout changed to 300000 ms.
+
+TimeoutIncreased --> StrictLowRiskRun
+StrictLowRiskRun : Strict test forbids skill fallback and calls aocs_run_full for what is 2+2.
+
+StrictLowRiskRun --> LowRiskSuccess
+LowRiskSuccess : MCP_SUCCESS=4; run 20260615T050331Z-61a33850 completed; 1 LLM call; accept.
+
+LowRiskSuccess --> StrictMediumRun
+StrictMediumRun : Strict architecture test calls aocs_run_full with max_sub_agents=12.
+
+StrictMediumRun --> MediumSuccess
+MediumSuccess : MCP_SUCCESS; run 20260615T050411Z-56ffec8b completed; 11 LLM calls; flag_for_review; confidence 90.
+
+MediumSuccess --> VerifiedOperationalPath
+VerifiedOperationalPath : OpenCode agent -> MCP -> AOCSRuntime -> LLMRouter -> OpenCode Go direct HTTPS -> AOCS result.
+
+VerifiedOperationalPath --> [*]
+
+@enduml
+```
