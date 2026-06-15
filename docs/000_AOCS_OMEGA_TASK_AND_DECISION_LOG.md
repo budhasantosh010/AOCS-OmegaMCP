@@ -1230,3 +1230,89 @@ keeps the model-call budget small.
 ### Important security note
 
 The user's pasted terminal transcript included an API key. Any API key pasted into chat or a text file should be considered exposed and rotated before serious use.
+
+## 2026-06-15 - Fix Beginner Arithmetic Smoke Test
+
+### User request
+
+The user asked Codex to run the terminal tests and fix the errors directly after seeing this command fail or over-analyze:
+
+```powershell
+python -m aocs_mcp.cli run "what is 2+2?"
+```
+
+### Root cause
+
+The CLI default for `aocs run` is a real analysis posture:
+
+```text
+risk: medium
+fractal_depth: 1
+```
+
+That is reasonable for serious problems, but bad for beginner smoke tests. A trivial arithmetic question entered the deep AOCS pipeline, which required structured JSON from model calls. The model returned prose instead of JSON at one phase, causing:
+
+```text
+Could not extract JSON from response
+```
+
+### Decision
+
+Obvious two-number arithmetic should be answered deterministically by code before any LLM call, regardless of risk or fractal-depth defaults.
+
+Reason:
+
+Smoke tests must be stable, cheap, and beginner-safe. A question like `what is 2+2?` should not spend model calls, require API keys, or enter Type 2 reasoning.
+
+### Implementation
+
+Added deterministic arithmetic handling in `AOCSOrchestrator._maybe_direct_low_risk`.
+
+For simple expressions such as:
+
+```text
+2+2
+2 - 1
+3 * 4
+8 / 2
+```
+
+AOCS now returns a direct result without calling a model.
+
+Routes:
+
+- `direct-low-risk` when the user explicitly sets `risk=low`
+- `direct-arithmetic` when the user forgets flags and uses the default medium-risk CLI path
+
+### Verified exact beginner command
+
+Command:
+
+```powershell
+python -m aocs_mcp.cli run "what is 2+2?" --no-store
+```
+
+Observed result:
+
+```text
+problem_type: type1
+route_taken: direct-arithmetic
+total_llm_calls: 0
+specialist_proposal: 4
+verdict: accept
+confidence: 100.0
+```
+
+### Tests run
+
+```bash
+python tests/test_orchestrator_direct.py
+python tests/test_doctor.py
+python tests/test_router.py
+python tests/test_runtime.py
+python tests/test_provider_adapters.py
+python tests/test_opencode_go_direct_http.py
+python -m aocs_mcp.cli doctor --no-opencode
+```
+
+All passed.

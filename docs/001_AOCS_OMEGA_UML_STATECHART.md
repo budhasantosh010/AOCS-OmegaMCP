@@ -230,6 +230,43 @@ VersionPublished : Remote repository contains this documented AOCS runtime versi
 @enduml
 ```
 
+## 2026-06-15 - Beginner Arithmetic Smoke Test Fix Delta
+
+```plantuml
+@startuml AOCS_Omega_Beginner_Arithmetic_Smoke_Fix_2026_06_15
+
+title AOCS Omega MCP - Beginner Arithmetic Smoke Test Fix - 2026-06-15
+hide empty description
+
+[*] --> UserRunsDefaultArithmetic
+UserRunsDefaultArithmetic : User runs python -m aocs_mcp.cli run "what is 2+2?"
+
+UserRunsDefaultArithmetic --> DeepPipelineBug
+DeepPipelineBug : CLI defaults risk=medium and fractal_depth=1 send trivial arithmetic into Type 2 pipeline.
+
+DeepPipelineBug --> JsonFailureObserved
+JsonFailureObserved : Model returns prose for a structured phase; runtime reports Could not extract JSON.
+
+JsonFailureObserved --> DeterministicArithmeticDecision
+DeterministicArithmeticDecision : Obvious two-number arithmetic should be solved by code before any LLM call.
+
+DeterministicArithmeticDecision --> OrchestratorUpdated
+OrchestratorUpdated : _solve_simple_arithmetic handles +, -, *, x, X, and / safely.
+
+OrchestratorUpdated --> ExactCommandRetested
+ExactCommandRetested : python -m aocs_mcp.cli run "what is 2+2?" --no-store
+
+ExactCommandRetested --> SmokeTestPasses
+SmokeTestPasses : route=direct-arithmetic; answer=4; total_llm_calls=0; verdict=accept.
+
+SmokeTestPasses --> RegressionTestsPassed
+RegressionTestsPassed : orchestrator, doctor, router, runtime, provider, OpenCode direct HTTP tests passed.
+
+RegressionTestsPassed --> [*]
+
+@enduml
+```
+
 ## 2026-06-15 - No-Install Test Confusion And Doctor Encoding Fix Delta
 
 ```plantuml
