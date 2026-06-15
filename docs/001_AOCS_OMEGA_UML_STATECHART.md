@@ -230,6 +230,59 @@ VersionPublished : Remote repository contains this documented AOCS runtime versi
 @enduml
 ```
 
+## 2026-06-15 - Setup Hardening And Coauthor Check Delta
+
+```plantuml
+@startuml AOCS_Omega_Setup_Hardening_And_Coauthors_2026_06_15
+
+title AOCS Omega MCP - Setup Hardening And Coauthor Check - 2026-06-15
+hide empty description
+
+[*] --> UserAsksNext
+UserAsksNext : User asks what is next and asks to remove Claude as GitHub coauthor.
+
+UserAsksNext --> GitHistoryInspected
+GitHistoryInspected : Recent and full git history inspected for authors, committers, and Co-authored-by trailers.
+
+GitHistoryInspected --> NoClaudeCoauthorFound
+NoClaudeCoauthorFound : Only budhasantosh010 appears as author and committer; no Claude coauthor metadata found.
+
+NoClaudeCoauthorFound --> NoHistoryRewrite
+NoHistoryRewrite : Decision: do not rewrite Git history because there is no coauthor metadata to remove.
+
+NoHistoryRewrite --> DoctorCommandAdded
+DoctorCommandAdded : aocs doctor added as beginner-facing setup diagnostic.
+
+state "DoctorCommandAdded" as DoctorCommandAdded {
+  [*] --> ChecksPython
+  ChecksPython --> ChecksPackages
+  ChecksPackages --> ChecksConfigFiles
+  ChecksConfigFiles --> ChecksProviderEnvNames
+  ChecksProviderEnvNames --> ChecksOpenCodeConfig
+  ChecksOpenCodeConfig --> ChecksOpenCodeBinary
+  ChecksOpenCodeBinary --> ChecksOpenCodeMCP
+}
+
+DoctorCommandAdded --> DoctorJsonAdded
+DoctorJsonAdded : aocs doctor --json added for automation.
+
+DoctorJsonAdded --> DoctorNoOpenCodeAdded
+DoctorNoOpenCodeAdded : aocs doctor --no-opencode added for non-OpenCode hosts.
+
+DoctorNoOpenCodeAdded --> WindowsCmdFix
+WindowsCmdFix : Doctor now resolves opencode and opencode.cmd.
+
+WindowsCmdFix --> VerificationPassed
+VerificationPassed : doctor CLI, JSON output, doctor tests, and router regression test passed.
+
+VerificationPassed --> CurrentDoctorState
+CurrentDoctorState : Full doctor reports OpenCode MCP connected; only warning is missing provider API env var.
+
+CurrentDoctorState --> [*]
+
+@enduml
+```
+
 ## Future Update Template
 
 Add a new dated section with either a full replacement statechart or a small delta diagram.

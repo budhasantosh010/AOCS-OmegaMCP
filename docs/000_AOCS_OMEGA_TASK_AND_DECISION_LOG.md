@@ -1004,3 +1004,131 @@ Operationally verified path:
 ```text
 OpenCode agent -> aocs-omega MCP server -> aocs_run_full -> AOCSRuntime -> LLMRouter -> OpenCode Go direct HTTPS -> AOCS result -> OpenCode summary
 ```
+
+## 2026-06-15 - Setup Hardening And Coauthor Check
+
+### User request
+
+The user asked what to do next. The chosen next step was hardening, specifically adding beginner-facing diagnostics. The user also asked to remove Claude as a coauthor on GitHub.
+
+### GitHub coauthor investigation
+
+Full recent and all-history Git metadata was inspected.
+
+Result:
+
+```text
+All commits are authored by budhasantosh010.
+All commits are committed by budhasantosh010.
+No Co-authored-by: Claude trailer was found.
+No Claude/Anthropic author email was found.
+```
+
+Decision:
+
+Do not rewrite Git history, because there is no Claude coauthor metadata in the repository history to remove. Rewriting history without a real metadata problem would create unnecessary risk.
+
+Related note:
+
+The repository does contain Claude Code adapter/config files. That is not the same as a GitHub coauthor. If the user wants Claude Code project adapter files removed later, that should be a separate explicit decision because it changes supported agent adapters.
+
+### Added `aocs doctor`
+
+New command:
+
+```bash
+aocs doctor
+```
+
+Purpose:
+
+Give beginners a direct setup check instead of making them understand MCP, Python imports, provider keys, and OpenCode configuration manually.
+
+Checks included:
+
+- Python version
+- `mcp` package import
+- `pydantic` package import
+- `config/models.default.json`
+- `config/models.local.json`
+- config JSON loading
+- supported model-provider environment variable names
+- `opencode.jsonc`
+- OpenCode binary/version
+- OpenCode MCP connection status for `aocs-omega`
+
+Security rule:
+
+`aocs doctor` reports which API key environment variable names are set. It does not print secret values.
+
+### Added JSON output
+
+New command:
+
+```bash
+aocs doctor --json
+```
+
+Purpose:
+
+Allow future installer scripts, CI checks, or GUI wrappers to read setup status mechanically.
+
+### Added no-OpenCode mode
+
+New command:
+
+```bash
+aocs doctor --no-opencode
+```
+
+Purpose:
+
+Allow diagnostics on machines that are using Claude Code, Cursor, Codex, or plain CLI instead of OpenCode.
+
+### Windows-specific fix
+
+Initial full doctor check could not find OpenCode from Python even though PowerShell could run it. The cause was Windows command resolution: Python did not find `opencode`, but the installed executable is `opencode.cmd`.
+
+Fix:
+
+Doctor now checks both:
+
+```text
+opencode
+opencode.cmd
+```
+
+and uses the resolved executable path for version and MCP checks.
+
+### Verification
+
+Commands run:
+
+```bash
+python -m aocs_mcp.cli doctor --no-opencode
+python -m aocs_mcp.cli doctor --no-opencode --json
+python -m aocs_mcp.cli doctor
+python tests/test_doctor.py
+python tests/test_router.py
+```
+
+Observed full doctor result:
+
+```text
+[OK] python: 3.13.5
+[OK] mcp package: import succeeded
+[OK] pydantic package: import succeeded
+[OK] models.default.json: config/models.default.json
+[OK] models.local.json: config/models.local.json
+[OK] config load: 8 top-level keys loaded
+[WARN] model API environment: no supported provider API key is set
+[OK] opencode.jsonc: opencode.jsonc
+[OK] opencode binary: 1.16.0
+[OK] opencode mcp: aocs-omega connected
+
+Result: warn (0 fail, 1 warn)
+```
+
+Interpretation:
+
+The local setup is structurally valid. The only warning is expected because no model provider API key was set in the shell used for this diagnostic run.

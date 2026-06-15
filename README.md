@@ -52,6 +52,17 @@ Run directly from the terminal:
 aocs run "Analyze this problem deeply"
 ```
 
+Check local setup before using a coding agent:
+
+```bash
+aocs doctor
+```
+
+The doctor command checks Python packages, config files, provider environment
+variables, OpenCode availability, and whether OpenCode can connect to the
+`aocs-omega` MCP server. It reports which environment variable names are set,
+but never prints API key values.
+
 Start the MCP server:
 
 ```bash
@@ -297,6 +308,7 @@ Use the same MCP command:
 Run the script-style tests:
 
 ```bash
+python tests/test_doctor.py
 python tests/test_models.py
 python tests/test_config.py
 python tests/test_scorer.py

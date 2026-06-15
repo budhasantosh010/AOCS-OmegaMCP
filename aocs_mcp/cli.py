@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import json
 
+from aocs_mcp.doctor import checks_to_json, checks_to_dict, format_checks, run_doctor
 from aocs_mcp.runtime import AOCSRunRequest, AOCSRuntime
 
 
@@ -23,6 +24,15 @@ async def _run(args: argparse.Namespace) -> int:
     return 1 if result.error else 0
 
 
+async def _doctor(args: argparse.Namespace) -> int:
+    checks = run_doctor(include_opencode=not args.no_opencode)
+    if args.json:
+        print(checks_to_json(checks))
+    else:
+        print(format_checks(checks))
+    return 1 if checks_to_dict(checks)["failures"] else 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="aocs")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -37,6 +47,11 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--output-dir", default=None, help="Where to write .aocs run artifacts")
     run.add_argument("--no-store", action="store_true", help="Run without writing .aocs artifacts")
     run.set_defaults(func=_run)
+
+    doctor = sub.add_parser("doctor", help="Check local AOCS, provider, and OpenCode MCP setup")
+    doctor.add_argument("--json", action="store_true", help="Print machine-readable JSON")
+    doctor.add_argument("--no-opencode", action="store_true", help="Skip OpenCode binary and MCP checks")
+    doctor.set_defaults(func=_doctor)
 
     return parser
 
