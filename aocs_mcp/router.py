@@ -91,6 +91,7 @@ class LLMRouter:
                 )
                 entry["status"] = "ok"
                 entry["response_chars"] = len(text)
+                self._record_response_preview(entry, text)
                 return text
             except Exception as e:
                 entry["status"] = "error"
@@ -117,6 +118,7 @@ class LLMRouter:
                 )
                 entry["status"] = "ok"
                 entry["response_chars"] = len(text)
+                self._record_response_preview(entry, text)
                 entry["duration_ms"] = round((time.perf_counter() - started) * 1000, 1)
                 return text
             except RuntimeError as e:
@@ -148,6 +150,7 @@ class LLMRouter:
                     )
                     entry["status"] = "ok"
                     entry["response_chars"] = len(text)
+                    self._record_response_preview(entry, text)
                     entry["duration_ms"] = round((time.perf_counter() - started) * 1000, 1)
                     return text
                 except Exception as e:
@@ -165,6 +168,17 @@ class LLMRouter:
         raise LLMUnavailable(
             f"No provider for role '{role}'. Tried: {'; '.join(errors) or 'nothing configured'}"
         )
+
+    def _record_response_preview(self, entry: dict, text: str) -> None:
+        """Store a local response preview for the AOCS dashboard."""
+        runtime_cfg = self.config.get("runtime", {}) or {}
+        preview_chars = runtime_cfg.get("trace_response_preview_chars", 2000)
+        try:
+            preview_chars = int(preview_chars)
+        except (TypeError, ValueError):
+            preview_chars = 0
+        if preview_chars > 0:
+            entry["response_preview"] = text[:preview_chars]
 
     async def call_structured(
         self,

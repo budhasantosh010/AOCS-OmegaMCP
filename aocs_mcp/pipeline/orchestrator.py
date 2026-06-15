@@ -45,8 +45,8 @@ class AOCSOrchestrator:
     async def analyze(
         self,
         problem: str,
-        domain: str = "software",
-        risk: str = "medium",
+        domain: str | None = None,
+        risk: str | None = None,
         fractal_depth: int | None = None,
         context: str | None = None,
         max_sub_agents: int = 16,
@@ -70,7 +70,8 @@ class AOCSOrchestrator:
 
             # === CLASSIFICATION ===
             classification = classify(problem, phase0)
-            classification.risk_level = risk or classification.risk_level
+            if risk:
+                classification.risk_level = risk
             self.blackboard.store("classification", classification.model_dump())
             fd = fractal_depth if fractal_depth is not None else classification.fractal_depth
 
@@ -169,6 +170,7 @@ class AOCSOrchestrator:
             # === FINAL VERDICT ===
             confidence = quality_subject.judge.confidence if quality_subject else 50.0
             verdict_str = self._determine_verdict(confidence, quality_gates, observer_result)
+            verdict_str = self._apply_shadow_escalation(verdict_str, shadow)
             total_llm_calls = getattr(self.router, "call_count", self.llm_call_count)
 
             # === FLYWHEEL ===
@@ -197,7 +199,7 @@ class AOCSOrchestrator:
                 memory_audit=audit,
                 confidence=round(confidence, 1),
                 verdict=verdict_str,
-                recommendations=self._build_recommendations(verdict_str, audit),
+                recommendations=self._build_recommendations(verdict_str, audit, shadow),
             )
 
             Flywheel().capture(problem, analysis_result, self.blackboard)
@@ -216,14 +218,15 @@ class AOCSOrchestrator:
     async def _maybe_direct_low_risk(
         self,
         problem: str,
-        domain: str,
-        risk: str,
+        domain: str | None,
+        risk: str | None,
         fractal_depth: int | None,
     ) -> AnalysisResult | None:
-        """Collapse obvious low-risk arithmetic to the shortest useful path."""
-        if risk != "low" or (fractal_depth is not None and fractal_depth > 0):
-            return None
-        if not self._looks_like_simple_arithmetic(problem):
+        """Route obvious direct questions to a single LLM answer, not the deep pipeline."""
+        is_simple_arithmetic = self._looks_like_simple_arithmetic(problem)
+        if not is_simple_arithmetic and (
+            risk != "low" or (fractal_depth is not None and fractal_depth > 0)
+        ):
             return None
 
         system = (
@@ -237,21 +240,21 @@ class AOCSOrchestrator:
             problem=problem,
             domain=domain,
             problem_type="type1",
-            route_taken="direct-low-risk",
+            route_taken="direct-low-risk" if risk == "low" else "direct-answer",
             fractal_depth=0,
             total_llm_calls=total_llm_calls,
-            root_problem="Answer the directly verifiable low-risk arithmetic question.",
+            root_problem="Answer the directly verifiable question.",
             specialist_proposal=answer,
-            confidence=99.0,
+            confidence=99.0 if risk == "low" else 95.0,
             verdict="accept",
-            recommendations=["Use the direct answer; no deeper AOCS route was needed."],
+            recommendations=["Use the direct LLM answer; no deeper AOCS route was needed."],
         )
 
     @staticmethod
     def _looks_like_simple_arithmetic(problem: str) -> bool:
         return bool(re.search(r"\b\d+\s*(?:\+|-|\*|/|x|X)\s*\d+\b", problem))
 
-    async def _run_phase0(self, problem: str, domain: str) -> Phase0Result:
+    async def _run_phase0(self, problem: str, domain: str | None) -> Phase0Result:
         """Execute Phase 0: Parser → Multi-Framer → Assumptions → Uncertainty → Root → Deep Test."""
         # Step 1: Parser
         parsed = parse(problem, domain)
@@ -311,8 +314,26 @@ class AOCSOrchestrator:
         return "flag_for_review"
 
     @staticmethod
-    def _build_recommendations(verdict: str, audit: AuditResult) -> list[str]:
+    def _apply_shadow_escalation(verdict: str, shadow: ShadowResult | None) -> str:
+        """Do not accept when the independent shadow route is more conservative."""
+        if not shadow or not shadow.divergence_detected:
+            return verdict
+        if shadow.safe_path.startswith("Use shadow") and verdict == "accept":
+            return "flag_for_review"
+        return verdict
+
+    @staticmethod
+    def _build_recommendations(
+        verdict: str,
+        audit: AuditResult,
+        shadow: ShadowResult | None = None,
+    ) -> list[str]:
         recs = []
+        if shadow and shadow.divergence_detected and shadow.safe_path.startswith("Use shadow"):
+            recs.append(
+                "Shadow orchestrator recommends safer reroute: "
+                f"{shadow.safe_path}. Do not act on the current route without review."
+            )
         if verdict == "reject":
             recs.append("Return to Phase 0: reframe the problem completely")
             recs.append("Consider re-classification to a different Type")

@@ -8,6 +8,9 @@ LENS_AGENT_SYSTEM = """You are a {lens} expert analyzing a problem.
 What would your expertise notice that others miss?
 Provide structured observations about the problem.
 
+If the domain is not explicitly provided, infer the correct discipline from the
+problem. Do not assume software unless the problem evidence points there.
+
 Output as JSON:
 ```json
 {{"observations": ["obs1", "obs2", "obs3"], "key_insight": "what your lens uniquely reveals"}}
@@ -37,11 +40,11 @@ Output JSON:
 
 
 LENSES = [
-    "Systems Architect",
-    "Security Researcher",
-    "Performance Engineer",
-    "UX-Aware Developer",
-    "Data Scientist",
+    "Domain Inference",
+    "First Principles",
+    "Evidence and Measurement",
+    "Systems and Constraints",
+    "Safety and Consequences",
 ]
 
 
@@ -52,14 +55,16 @@ class Type3Pipe:
         self.router = router
         self.max_lens = max_lens
 
-    async def run(self, domain: str, seed_question: str) -> Type3Result:
+    async def run(self, domain: str | None, seed_question: str) -> Type3Result:
+        domain_label = domain or "infer from problem; do not assume software"
+
         # Step 1: Lens Agents — parallel observations
         lens_observations = []
         for lens in LENSES[: self.max_lens]:
             system = LENS_AGENT_SYSTEM.format(lens=lens)
             try:
                 data = await self.router.call_structured(
-                    "type3-lens", system, f"Domain: {domain}\nProblem: {seed_question}"
+                    "type3-lens", system, f"Domain: {domain_label}\nProblem: {seed_question}"
                 )
                 obs = data.get("observations", [])
                 lens_observations.extend(obs)
@@ -70,7 +75,7 @@ class Type3Pipe:
         fp_data = await self.router.call_structured(
             "type3-first-principles",
             FIRST_PRINCIPLES_SYSTEM,
-            f"Domain: {domain}\nProblem: {seed_question}\nObservations: {'; '.join(lens_observations)}",
+            f"Domain: {domain_label}\nProblem: {seed_question}\nObservations: {'; '.join(lens_observations)}",
         )
         first_principles = "\n".join(fp_data.get("first_principles", []))
 
@@ -78,7 +83,7 @@ class Type3Pipe:
         hyp_data = await self.router.call_structured(
             "type3-hypothesis",
             HYPOTHESIS_SYSTEM,
-            f"Domain: {domain}\nProblem: {seed_question}\nFirst Principles: {first_principles}",
+            f"Domain: {domain_label}\nProblem: {seed_question}\nFirst Principles: {first_principles}",
         )
         hypotheses = [h.get("description", "") for h in hyp_data.get("hypotheses", [])]
 

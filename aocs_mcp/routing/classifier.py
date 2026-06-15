@@ -45,7 +45,6 @@ def classify(problem: str, phase0: Phase0Result) -> Classification:
             reasoning="Clear known problem with established solution path",
         )
 
-    # Default to Type 2
     risk = "medium"
     depth = 1
     if num_interps >= 4:
@@ -56,5 +55,9 @@ def classify(problem: str, phase0: Phase0Result) -> Classification:
         problem_type="type2",
         risk_level=risk,
         fractal_depth=depth,
-        reasoning=f"Default to Type 2 ({num_interps} interpretations, deep_test={deep_test_passed})",
+        reasoning=(
+            "Type 2 selected because the problem is neither clearly established "
+            f"nor clearly frontier-level ({num_interps} interpretations, "
+            f"deep_test={deep_test_passed})"
+        ),
     )

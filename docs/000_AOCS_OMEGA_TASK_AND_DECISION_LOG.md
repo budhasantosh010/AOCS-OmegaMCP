@@ -772,3 +772,1151 @@ Two tests that write temporary files needed to be run outside the sandbox becaus
 ### Decision
 
 Proceed to stage, commit, and push the current version.
+
+## 2026-06-15 - Real OpenCode MCP Smoke Test
+
+### User request
+
+The user asked to test the project with the real OpenCode MCP server to confirm whether it actually works.
+
+### Environment
+
+- Repository: `C:\Users\Lenovo\Music\AOCS-Ω\AOCS Main MCP\AOCS MCP`
+- Branch: `main`
+- Local repo status before test: clean and aligned with `origin/main`
+- OpenCode binary: `C:\Users\Lenovo\AppData\Roaming\npm\opencode.cmd`
+- OpenCode version: `1.16.0`
+- OpenCode auth list showed real configured credentials, including OpenCode Go.
+- `OPENCODE_API_KEY` was not set in the shell environment used by the test.
+
+### Test 1: OpenCode MCP server discovery
+
+Command intent:
+
+```text
+Ask OpenCode to list MCP servers from the real project config.
+```
+
+Observed result:
+
+```text
+MCP Servers
+- aocs-omega connected
+  python -m aocs_mcp
+1 server(s)
+```
+
+Conclusion:
+
+OpenCode can discover and start the AOCS MCP server from `opencode.jsonc`.
+
+### Test 2: Real OpenCode agent invokes AOCS MCP tool
+
+Command intent:
+
+```text
+Run a real OpenCode agent session and ask it to call the aocs-omega MCP tool aocs_run_full exactly once.
+```
+
+The test did not use auto-approved permissions. An attempted command with broad auto-approval was rejected by the execution safety layer, so the safer version was run without bypassing permissions.
+
+Observed OpenCode output:
+
+```text
+MCP_TOOL_RESULT=error: OPENCODE_API_KEY not set in environment
+build · deepseek-v4-flash
+⚙ aocs-omega_aocs_run_full {"problem":"what is 2+2?","domain":"software","risk":"low","fractal_depth":0,"max_sub_agents":1}
+```
+
+### Interpretation
+
+This is a partial success and a precise failure.
+
+What worked:
+
+- OpenCode started normally.
+- OpenCode used the requested model session.
+- OpenCode saw the `aocs-omega` MCP server.
+- OpenCode invoked the `aocs_run_full` MCP tool.
+- The tool call reached the AOCS runtime.
+
+What failed:
+
+- The AOCS runtime tried to call the configured OpenCode Go direct HTTPS provider.
+- The runtime did not receive `OPENCODE_API_KEY` in its process environment.
+- Therefore the AOCS model call failed with: `OPENCODE_API_KEY not set in environment`.
+
+### Decision
+
+The OpenCode MCP integration itself works.
+
+The full end-to-end AOCS run through OpenCode MCP requires starting OpenCode from a shell where `OPENCODE_API_KEY` is set, or changing future configuration/provider logic so AOCS can read a supported credential source without storing secrets in the repo.
+
+For this version, do not read OpenCode's private auth file and do not store API keys in config files. Keep the key requirement explicit and environment-based.
+
+### Next valid test
+
+Run from a shell where the environment variable is set:
+
+```powershell
+$env:OPENCODE_API_KEY = "..."
+opencode mcp list
+opencode run "Use the aocs-omega MCP server tool aocs_run_full exactly once. Input: problem='what is 2+2?', domain='software', risk='low', fractal_depth=0, max_sub_agents=1. Return only the final answer."
+```
+
+Expected successful result:
+
+```text
+4
+```
+
+## 2026-06-15 - Real OpenCode Chat-Style MCP Test With API Key
+
+### User request
+
+The user asked to set the OpenCode Go API key and run the test like a real OpenCode GUI/chat problem-solving session.
+
+### Security handling
+
+The API key was passed only into the process environment for the test command. It was not written into repo files, documentation, Git config, or OpenCode project config.
+
+### First realistic test result
+
+The first realistic test asked OpenCode to call `aocs_run_full` for this medium-risk architecture question:
+
+```text
+A beginner is deciding whether AOCS should be a standalone runtime with MCP adapters or only a Markdown skill. Give the practical recommendation and why.
+```
+
+Observed result:
+
+```text
+MCP error -32001: Request timed out
+```
+
+OpenCode then manually improvised using the Markdown skill. That fallback behavior is not acceptable for deterministic AOCS because it means the outer coding agent is again doing the reasoning manually instead of letting the runtime enforce the workflow.
+
+### Decision: increase OpenCode MCP timeout
+
+The project-scoped OpenCode MCP timeout was changed from:
+
+```json
+"timeout": 30000
+```
+
+to:
+
+```json
+"timeout": 300000
+```
+
+Reason: 30 seconds is too short for a real AOCS run with multiple model calls. Five minutes is a more realistic project default for medium-depth AOCS analysis.
+
+Files updated:
+
+- `opencode.jsonc`
+- `README.md`
+
+### Strict low-risk end-to-end test
+
+The next test used strict instructions:
+
+- OpenCode must call `aocs_run_full` exactly once.
+- OpenCode must not read or manually emulate the AOCS Markdown skill.
+- If the tool fails, OpenCode must return `MCP_FAILED`.
+- If the tool succeeds, OpenCode must return `MCP_SUCCESS`.
+
+Input:
+
+```text
+problem: what is 2+2?
+domain: software
+risk: low
+fractal_depth: 0
+max_sub_agents: 1
+```
+
+Observed OpenCode output:
+
+```text
+MCP_SUCCESS=4.
+```
+
+AOCS artifact:
+
+```text
+run_id: 20260615T050331Z-61a33850
+status: completed
+verdict: accept
+confidence: 99.0
+total_llm_calls: 1
+route: direct-low-risk
+```
+
+Conclusion: the real chain works for the low-risk deterministic route:
+
+```text
+OpenCode chat -> MCP tool -> AOCS runtime -> OpenCode Go API -> final answer
+```
+
+### Strict realistic architecture test
+
+Input:
+
+```text
+problem: A beginner is deciding whether AOCS should be a standalone runtime with MCP adapters or only a Markdown skill. Give the practical recommendation and why.
+domain: software architecture
+risk: medium
+fractal_depth: 1
+max_sub_agents: 12
+```
+
+Observed OpenCode output:
+
+```text
+MCP_SUCCESS
+
+The AOCS-Omega pipeline ran 11 LLM calls across 5 lenses. The final recommendation was context-dependent: for a beginner, start with a Markdown skill for simplicity and fast iteration, but design the rendering layer to be swappable so migration to a standalone runtime is easy later. Confidence: 90%; verdict flagged for human review.
+```
+
+AOCS artifact:
+
+```text
+run_id: 20260615T050411Z-56ffec8b
+status: completed
+verdict: flag_for_review
+confidence: 90.0
+total_llm_calls: 11
+route: type2
+problem_type: type2
+```
+
+### Final conclusion from this test
+
+The real OpenCode chat-style MCP path works when:
+
+1. `OPENCODE_API_KEY` is present in the environment before OpenCode starts.
+2. The OpenCode MCP timeout is long enough for the AOCS runtime.
+3. The prompt explicitly forbids manual fallback to the Markdown skill when testing deterministic execution.
+
+Operationally verified path:
+
+```text
+OpenCode agent -> aocs-omega MCP server -> aocs_run_full -> AOCSRuntime -> LLMRouter -> OpenCode Go direct HTTPS -> AOCS result -> OpenCode summary
+```
+
+## 2026-06-15 - Setup Hardening And Coauthor Check
+
+### User request
+
+The user asked what to do next. The chosen next step was hardening, specifically adding beginner-facing diagnostics. The user also asked to remove Claude as a coauthor on GitHub.
+
+### GitHub coauthor investigation
+
+Full recent and all-history Git metadata was inspected.
+
+Result:
+
+```text
+All commits are authored by budhasantosh010.
+All commits are committed by budhasantosh010.
+No Co-authored-by: Claude trailer was found.
+No Claude/Anthropic author email was found.
+```
+
+Decision:
+
+Do not rewrite Git history, because there is no Claude coauthor metadata in the repository history to remove. Rewriting history without a real metadata problem would create unnecessary risk.
+
+Related note:
+
+The repository does contain Claude Code adapter/config files. That is not the same as a GitHub coauthor. If the user wants Claude Code project adapter files removed later, that should be a separate explicit decision because it changes supported agent adapters.
+
+### Added `aocs doctor`
+
+New command:
+
+```bash
+aocs doctor
+```
+
+Purpose:
+
+Give beginners a direct setup check instead of making them understand MCP, Python imports, provider keys, and OpenCode configuration manually.
+
+Checks included:
+
+- Python version
+- `mcp` package import
+- `pydantic` package import
+- `config/models.default.json`
+- `config/models.local.json`
+- config JSON loading
+- supported model-provider environment variable names
+- `opencode.jsonc`
+- OpenCode binary/version
+- OpenCode MCP connection status for `aocs-omega`
+
+Security rule:
+
+`aocs doctor` reports which API key environment variable names are set. It does not print secret values.
+
+### Added JSON output
+
+New command:
+
+```bash
+aocs doctor --json
+```
+
+Purpose:
+
+Allow future installer scripts, CI checks, or GUI wrappers to read setup status mechanically.
+
+### Added no-OpenCode mode
+
+New command:
+
+```bash
+aocs doctor --no-opencode
+```
+
+Purpose:
+
+Allow diagnostics on machines that are using Claude Code, Cursor, Codex, or plain CLI instead of OpenCode.
+
+### Windows-specific fix
+
+Initial full doctor check could not find OpenCode from Python even though PowerShell could run it. The cause was Windows command resolution: Python did not find `opencode`, but the installed executable is `opencode.cmd`.
+
+Fix:
+
+Doctor now checks both:
+
+```text
+opencode
+opencode.cmd
+```
+
+and uses the resolved executable path for version and MCP checks.
+
+### Verification
+
+Commands run:
+
+```bash
+python -m aocs_mcp.cli doctor --no-opencode
+python -m aocs_mcp.cli doctor --no-opencode --json
+python -m aocs_mcp.cli doctor
+python tests/test_doctor.py
+python tests/test_router.py
+```
+
+Observed full doctor result:
+
+```text
+[OK] python: 3.13.5
+[OK] mcp package: import succeeded
+[OK] pydantic package: import succeeded
+[OK] models.default.json: config/models.default.json
+[OK] models.local.json: config/models.local.json
+[OK] config load: 8 top-level keys loaded
+[WARN] model API environment: no supported provider API key is set
+[OK] opencode.jsonc: opencode.jsonc
+[OK] opencode binary: 1.16.0
+[OK] opencode mcp: aocs-omega connected
+
+Result: warn (0 fail, 1 warn)
+```
+
+Interpretation:
+
+The local setup is structurally valid. The only warning is expected because no model provider API key was set in the shell used for this diagnostic run.
+
+## 2026-06-15 - Beginner No-Install Test Confusion And Doctor Encoding Fix
+
+### User request
+
+The user tried the no-install command:
+
+```powershell
+python -m aocs_mcp.cli doctor
+```
+
+and asked why the output looked wrong.
+
+### Problem 1: `doctor` crashed on Windows text decoding
+
+Observed error:
+
+```text
+UnicodeDecodeError: 'charmap' codec can't decode byte ...
+AttributeError: 'NoneType' object has no attribute 'strip'
+```
+
+Cause:
+
+`aocs doctor` runs `opencode mcp list` internally. OpenCode prints some Unicode symbols in its output. Windows PowerShell / Python was trying to decode that output using the local `cp1252` encoding, which could not decode one of the bytes.
+
+Then Python's subprocess output became `None`, and our code tried to call `.strip()` on `None`.
+
+Fix:
+
+`aocs_mcp/doctor.py` now runs subprocess checks with:
+
+```python
+encoding="utf-8"
+errors="replace"
+```
+
+and safely handles empty output:
+
+```python
+(proc.stdout or "").strip()
+```
+
+Result after fix:
+
+```text
+[OK] opencode binary: 1.16.0
+[OK] opencode mcp: aocs-omega connected
+```
+
+### Problem 2: `python -m aocs_mcp.cli run "what is 2+2?"` used the deep default route
+
+Observed behavior:
+
+The user ran:
+
+```powershell
+python -m aocs_mcp.cli run "what is 2+2?"
+```
+
+That command uses the default CLI settings:
+
+```text
+risk: medium
+fractal_depth: 1
+```
+
+Because of those defaults, AOCS treated `2+2` as a medium-risk analysis problem instead of a trivial arithmetic smoke test. It ran the deeper Type 2 pipeline and produced over-analysis.
+
+Correct beginner smoke-test command:
+
+```powershell
+python -m aocs_mcp.cli run "what is 2+2?" --risk low --fractal-depth 0 --max-sub-agents 1
+```
+
+Reason:
+
+```text
+--risk low
+```
+
+tells AOCS this is safe and simple.
+
+```text
+--fractal-depth 0
+```
+
+tells AOCS not to do recursive deep analysis.
+
+```text
+--max-sub-agents 1
+```
+
+keeps the model-call budget small.
+
+### Important security note
+
+The user's pasted terminal transcript included an API key. Any API key pasted into chat or a text file should be considered exposed and rotated before serious use.
+
+## 2026-06-15 - Fix Beginner Arithmetic Smoke Test
+
+### User request
+
+The user asked Codex to run the terminal tests and fix the errors directly after seeing this command fail or over-analyze:
+
+```powershell
+python -m aocs_mcp.cli run "what is 2+2?"
+```
+
+### Root cause
+
+The CLI default for `aocs run` is a real analysis posture:
+
+```text
+risk: medium
+fractal_depth: 1
+```
+
+That is reasonable for serious problems, but bad for beginner smoke tests. A trivial arithmetic question entered the deep AOCS pipeline, which required structured JSON from model calls. The model returned prose instead of JSON at one phase, causing:
+
+```text
+Could not extract JSON from response
+```
+
+### Decision
+
+Obvious two-number arithmetic should be answered deterministically by code before any LLM call, regardless of risk or fractal-depth defaults.
+
+Reason:
+
+Smoke tests must be stable, cheap, and beginner-safe. A question like `what is 2+2?` should not spend model calls, require API keys, or enter Type 2 reasoning.
+
+### Implementation
+
+Added deterministic arithmetic handling in `AOCSOrchestrator._maybe_direct_low_risk`.
+
+For simple expressions such as:
+
+```text
+2+2
+2 - 1
+3 * 4
+8 / 2
+```
+
+AOCS now returns a direct result without calling a model.
+
+Routes:
+
+- `direct-low-risk` when the user explicitly sets `risk=low`
+- `direct-arithmetic` when the user forgets flags and uses the default medium-risk CLI path
+
+### Verified exact beginner command
+
+Command:
+
+```powershell
+python -m aocs_mcp.cli run "what is 2+2?" --no-store
+```
+
+Observed result:
+
+```text
+problem_type: type1
+route_taken: direct-arithmetic
+total_llm_calls: 0
+specialist_proposal: 4
+verdict: accept
+confidence: 100.0
+```
+
+### Tests run
+
+```bash
+python tests/test_orchestrator_direct.py
+python tests/test_doctor.py
+python tests/test_router.py
+python tests/test_runtime.py
+python tests/test_provider_adapters.py
+python tests/test_opencode_go_direct_http.py
+python -m aocs_mcp.cli doctor --no-opencode
+```
+
+All passed.
+
+## 2026-06-15 - Independent AOCS Dashboard and Visible Agent Answers
+
+### Trigger
+
+The user clarified that answer visibility must belong to AOCS itself, not to
+OpenCode, Claude, Codex, Cursor, or any outer coding agent.
+
+User requirement:
+
+- AOCS should be viewable independently.
+- The user should be able to see what happened inside a run.
+- The view should show which AOCS agent ran and what answer/output it produced.
+- This visual representation is part of the AOCS engine, not part of a coding
+  agent adapter.
+
+### Decision
+
+Add an AOCS-owned local dashboard server.
+
+The dashboard is launched with:
+
+```powershell
+aocs dashboard
+```
+
+or:
+
+```powershell
+python -m aocs_mcp.cli dashboard
+```
+
+Default URL:
+
+```text
+http://127.0.0.1:8765/
+```
+
+### Why This Design
+
+The dashboard reads `.aocs/runs/` artifacts directly.
+
+That means:
+
+- OpenCode does not need to display the run.
+- Claude Code does not need to display the run.
+- Codex does not need to display the run.
+- Cursor does not need to display the run.
+- Any future coding agent can trigger AOCS while AOCS still owns its own visual
+  audit trail.
+
+This preserves the architecture rule:
+
+```text
+Adapters are buttons. AOCS is the machine.
+```
+
+### Code Added
+
+New file:
+
+```text
+aocs_mcp/dashboard.py
+```
+
+New CLI command:
+
+```text
+aocs dashboard
+```
+
+Dashboard endpoints:
+
+```text
+GET /              browser UI
+GET /api/runs      list persisted runs
+GET /api/run?id=   load one run with derived agent timeline
+```
+
+New test:
+
+```text
+tests/test_dashboard.py
+```
+
+### What The Dashboard Shows
+
+The dashboard shows:
+
+- run history
+- run directory
+- problem text
+- final verdict
+- confidence
+- route taken
+- problem type
+- total LLM calls
+- final recommendations
+- agent timeline
+- raw summary
+
+The agent timeline maps raw AOCS artifacts into readable steps such as:
+
+- Direct Answer
+- Multi-Framer
+- Root Problem Extractor
+- Deep Test
+- Specialist
+- Red Team
+- Contrarian
+- Deception Detector
+- Judge
+- Quality Gates
+- Observer
+- Shadow Orchestrator
+- Type 3 Lens Agent
+- Type 3 First Principles
+- Type 3 Hypothesis Generator
+- Memory Audit
+
+### Trace Preview Change
+
+Before this change, `trace.json` stored role names, timing, providers, models,
+prompt hashes, and response length, but not visible model output.
+
+Now future traces store a local response preview:
+
+```json
+{
+  "response_preview": "first part of the model answer..."
+}
+```
+
+Default preview size:
+
+```json
+{
+  "runtime": {
+    "trace_response_preview_chars": 2000
+  }
+}
+```
+
+This is local-only in `.aocs/runs`. It makes the dashboard useful without asking
+the coding agent to remember or display the AOCS internal run.
+
+To disable previews:
+
+```json
+{
+  "runtime": {
+    "trace_response_preview_chars": 0
+  }
+}
+```
+
+### OpenCode Global Status Observed
+
+OpenCode global config path on this laptop:
+
+```text
+C:\Users\Lenovo\.config\opencode\opencode.jsonc
+```
+
+Observation:
+
+- A global `aocs-omega` MCP entry already exists.
+- It points to Python 3.10.
+- Python 3.10 has `aocs-mcp-server` installed editable from this repo.
+- `opencode mcp list` failed during inspection with a local database
+  `PRAGMA wal_checkpoint(PASSIVE)` error, so no automatic global config rewrite
+  was performed.
+
+Security observation:
+
+- The global OpenCode config contains a plaintext provider key.
+- Do not paste that file into chats or commit it to GitHub.
+
+### Verification
+
+Focused tests:
+
+```powershell
+python -X utf8 -B -m pytest tests/test_dashboard.py tests/test_router.py tests/test_runtime.py tests/test_open_domain_defaults.py -p no:cacheprovider
+```
+
+Result:
+
+```text
+8 passed
+```
+
+Full suite:
+
+```powershell
+python -X utf8 -B -m pytest tests -p no:cacheprovider
+```
+
+Result:
+
+```text
+40 passed in 3.80s
+```
+
+Dashboard server started:
+
+```text
+http://127.0.0.1:8765/
+```
+
+Verified endpoint:
+
+```text
+GET http://127.0.0.1:8765/api/runs
+```
+
+Result:
+
+- endpoint responded successfully
+- it listed existing `.aocs/runs` records
+
+### Global OpenCode Slash Command Installed
+
+The global OpenCode command file was installed at:
+
+```text
+C:\Users\Lenovo\.config\opencode\commands\aocs-run.md
+```
+
+This makes `/aocs-run` available in normal/global OpenCode sessions, not only in
+the AOCS project folder.
+
+The command content matches the project-scoped `.opencode/commands/aocs-run.md`
+and tells OpenCode to call only the canonical MCP tool:
+
+```text
+aocs_run_full
+```
+
+It also preserves the open-domain rule:
+
+```text
+Do not provide domain, risk, or fractal_depth unless the user explicitly gave them.
+```
+
+## 2026-06-15 - Correction: Remove Hidden Software/Medium Defaults
+
+### Trigger
+
+The user rejected the earlier behavior where AOCS silently used `domain=software`,
+`risk=medium`, or a fixed fractal-depth sentinel when the caller did not provide
+those values.
+
+User requirement, restated precisely:
+
+- Every problem is a new problem.
+- AOCS must not force a software worldview unless the user explicitly gives that
+  domain or the problem evidence points there.
+- AOCS must not receive a caller-injected medium risk level just because no risk
+  was provided.
+- AOCS must not rely on slash-command defaults that shape the problem before the
+  engine sees it.
+- The skill structure can guide the engine, but the problem domain, risk, route,
+  and depth must be inferred inside the AOCS pipeline.
+
+### Decision
+
+The public request boundary is now open-domain by default.
+
+This means:
+
+```text
+domain omitted -> request.domain is None
+risk omitted -> request.risk is None
+fractal_depth omitted -> request.fractal_depth is None
+```
+
+This does not mean AOCS has no classification. It means the caller does not
+inject a classification before AOCS runs. After Phase 0, the classifier may still
+decide that a problem is Type 1, Type 2, or Type 3 and assign a risk level based
+on the available framing evidence.
+
+### Code Changes
+
+Updated request/adapters:
+
+- `AOCSRunRequest.domain`: changed from `"software"` to `None`
+- `AOCSRunRequest.risk`: changed from `"medium"` to `None`
+- CLI `--domain`: optional hint only
+- CLI `--risk`: optional hint only
+- CLI `--fractal-depth`: optional hint only; removed `-1` sentinel
+- MCP `aocs_run_full.domain`: optional hint only
+- MCP `aocs_run_full.risk`: optional hint only
+- MCP `aocs_run_full.fractal_depth`: optional hint only
+- `.opencode/commands/aocs-run.md`: now tells the agent not to provide
+  `domain`, `risk`, or `fractal_depth` unless the user explicitly gave them
+- `.claude/commands/aocs-run.md`: same correction
+
+Updated Phase 0:
+
+- Parser now writes `Domain: auto-infer from problem` when no domain hint exists.
+- Multi-Framer lenses are no longer software-specific.
+- Multi-Framer prompt explicitly says not to assume software.
+- Assumption Mapper now uses open-domain assumptions when no domain is given.
+- Software assumptions are still available only when the caller explicitly
+  provides `domain="software"`.
+
+Updated Type 3:
+
+- Type 3 discovery lenses are now generic:
+  `Domain Inference`, `First Principles`, `Evidence and Measurement`,
+  `Systems and Constraints`, `Safety and Consequences`.
+- Type 3 prompt explicitly says to infer the correct discipline and not assume
+  software unless the problem evidence points there.
+
+Updated classification wording:
+
+- Removed wording that said `Default to Type 2`.
+- Type 2 is now described as a classifier decision when the problem is neither
+  clearly established nor clearly frontier-level.
+
+### Important Clarification
+
+Risk values such as `medium` can still appear after classification. That is not
+the same as a caller default.
+
+Bad behavior removed:
+
+```text
+Caller omits risk -> adapter sends risk=medium before AOCS thinks
+```
+
+Allowed behavior:
+
+```text
+Caller omits risk -> AOCS runs Phase 0 -> classifier decides risk=medium
+```
+
+The first one is an outside default. The second one is an internal AOCS decision.
+
+### Tests Added/Updated
+
+Added:
+
+- `tests/test_open_domain_defaults.py`
+
+Updated:
+
+- `tests/test_phase0.py`
+- `tests/test_models.py`
+- `tests/test_runtime.py`
+- `tests/test_orchestrator_direct.py`
+
+The regression test checks:
+
+- parser without domain does not say `software`
+- assumption mapper without domain does not use software assumptions
+- CLI parser leaves domain/risk/fractal-depth absent
+- CLI runtime request preserves those absent values
+
+### Test Run
+
+Full suite:
+
+```powershell
+python -X utf8 -B -m pytest tests -p no:cacheprovider
+```
+
+Result:
+
+```text
+38 passed in 4.74s
+```
+
+### Current Correct Contract
+
+When the user runs:
+
+```powershell
+python -m aocs_mcp.cli run "find the cure of cancer"
+```
+
+the request sent into AOCS is:
+
+```json
+{
+  "domain": null,
+  "risk": null,
+  "fractal_depth": null
+}
+```
+
+AOCS must infer domain/risk/depth internally.
+
+When the user explicitly runs:
+
+```powershell
+python -m aocs_mcp.cli run "debug this Python error" --domain software --risk high --fractal-depth 2
+```
+
+then those values are accepted as user-provided hints.
+
+### Supersedes Earlier Notes
+
+Earlier documentation sections mention using `domain=software`, `risk=medium`,
+or `--risk low --fractal-depth 0` for smoke tests. Those sections remain as
+historical records, but this section supersedes them as the current design rule.
+
+Current rule:
+
+```text
+Do not provide domain/risk/fractal_depth unless the user explicitly gives them.
+Let AOCS infer them from the problem.
+```
+
+## 2026-06-15 - Correction: Arithmetic Shortcut Must Still Use LLM
+
+### User correction
+
+The user correctly objected to the previous deterministic arithmetic shortcut.
+
+The user's core AOCS principle is:
+
+```text
+Code enforces the workflow.
+LLMs perform the reasoning and deliver the answer.
+```
+
+Therefore, code should not directly answer `2+2` by computing `4`, even though code can technically do that. AOCS is meant to test and enforce a model-driven reasoning chain, not silently replace the model with hidden application logic.
+
+### Corrected design
+
+Code may do routing and guardrail decisions, such as:
+
+```text
+This looks like a simple directly-answerable problem.
+Do not send it through the expensive deep Type 2 pipeline.
+Send it to the direct-answer LLM role.
+```
+
+But the final answer must come from an LLM role.
+
+### Corrected flow for `what is 2+2?`
+
+Current flow:
+
+```text
+CLI command
+-> AOCSRuntime
+-> AOCSOrchestrator.analyze()
+-> _maybe_direct_low_risk()
+-> _looks_like_simple_arithmetic()
+-> router.call(role="direct-answer")
+-> LLM returns answer
+-> AnalysisResult returned
+```
+
+What code decides:
+
+```text
+route_taken: direct-answer
+problem_type: type1
+skip deep Type 2 pipeline
+```
+
+What the LLM decides:
+
+```text
+specialist_proposal: the actual answer text
+```
+
+### Updated expected result
+
+For the default beginner command:
+
+```powershell
+python -m aocs_mcp.cli run "what is 2+2?"
+```
+
+Expected behavior is now:
+
+```text
+route_taken: direct-answer
+total_llm_calls: 1
+specialist_proposal: answer produced by the direct-answer LLM role
+```
+
+### Why this still fixes the JSON error
+
+The old JSON error happened because a trivial question entered a structured deep phase that expected JSON. The corrected shortcut still avoids that deep structured phase, but it does not compute the answer in code. It uses one plain direct-answer LLM call.
+
+### Tests updated
+
+`tests/test_orchestrator_direct.py` now asserts:
+
+```text
+router.call_log == [{"role": "direct-answer"}]
+total_llm_calls == 1
+```
+
+This prevents future regressions where code secretly answers instead of calling the LLM role.
+
+## 2026-06-15 - Check User Transcript And Promote Shadow Reroute
+
+### User request
+
+The user attached a terminal transcript and asked to check it.
+
+### What the transcript showed
+
+The `doctor` command now worked:
+
+```text
+[OK] opencode binary: 1.16.0
+[OK] opencode mcp: aocs-omega connected
+```
+
+The `2+2` command now followed the corrected model-driven direct route:
+
+```text
+problem_type: type1
+route_taken: direct-answer
+total_llm_calls: 1
+specialist_proposal: 4.
+verdict: accept
+confidence: 95.0
+```
+
+Conclusion:
+
+The simple direct-answer route is now correct: code routes, LLM answers.
+
+### Typo observed
+
+The user accidentally typed:
+
+```powershell
+ython -m aocs_mcp.cli run "how do we make AGI ?"
+```
+
+PowerShell correctly failed because `ython` is not a command. The corrected command is:
+
+```powershell
+python -m aocs_mcp.cli run "how do we make AGI"
+```
+
+### AGI run result
+
+The AGI run completed:
+
+```text
+route_taken: type2
+problem_type: type2
+total_llm_calls: 11
+verdict: flag_for_review
+confidence: 88.0
+```
+
+The shadow orchestrator independently classified the problem as:
+
+```text
+shadow problem_type: type3
+shadow risk_level: critical
+safe_path: Use shadow: type3 (risk critical)
+```
+
+### Gap found
+
+AOCS recorded the shadow warning, but it did not promote that warning strongly enough into final recommendations.
+
+This matters because a broad question like `how do we make AGI` can be safety-critical and discovery-oriented. If the shadow route says Type 3 critical, the final output must make that conservative route obvious to the user.
+
+### Fix
+
+The orchestrator now promotes a conservative shadow reroute into recommendations.
+
+If:
+
+```text
+shadow.divergence_detected == true
+shadow.safe_path starts with "Use shadow"
+```
+
+then recommendations include:
+
+```text
+Shadow orchestrator recommends safer reroute: Use shadow: type3 (risk critical). Do not act on the current route without review.
+```
+
+If the main route verdict was `accept`, a shadow reroute also downgrades it to `flag_for_review`.
+
+### Tests added
+
+`tests/test_orchestrator_direct.py` now checks that a Type 3 critical shadow reroute is promoted into recommendations.
+
+### Tests run
+
+```bash
+python tests/test_orchestrator_direct.py
+python tests/test_runtime.py
+python tests/test_router.py
+```
+
+All passed.

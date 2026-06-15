@@ -24,8 +24,8 @@ class AOCSRunRequest(BaseModel):
     """Portable request object used by MCP, CLI, HTTP, and future adapters."""
 
     problem: str
-    domain: str = "software"
-    risk: str = "medium"
+    domain: str | None = None
+    risk: str | None = None
     fractal_depth: int | None = None
     context: str | None = None
     max_sub_agents: int = 16

@@ -68,18 +68,18 @@ debug_tool = mcp.tool if config.get("expose_debug_tools", False) else _hidden_to
 @mcp.tool()
 async def aocs_run_full(
     problem: str,
-    domain: str = "software",
-    risk: str = "medium",
-    fractal_depth: int = 0,
+    domain: str | None = None,
+    risk: str | None = None,
+    fractal_depth: int | None = None,
     context: str | None = None,
     max_sub_agents: int = 16,
 ) -> AnalysisResult:
     """Full AOCS‑Ω pipeline: Phase 0 → Phase 1 → Classify → Route → Execute → Verify → Report.
 
     - problem: The raw problem or request to analyze
-    - domain: Domain context (software, hardware, business, etc.)
-    - risk: Risk level (low, medium, high, critical)
-    - fractal_depth: Depth of recursive self-challenge (0-3)
+    - domain: Optional domain hint. Omit to let AOCS infer the domain from the problem.
+    - risk: Optional risk hint. Omit to let AOCS infer risk from classification.
+    - fractal_depth: Optional recursion depth hint (0-3). Omit to let AOCS classify depth.
     - context: Additional context (logs, error messages, etc.)
     - max_sub_agents: Maximum LLM sub-agent calls allowed
     """
@@ -88,7 +88,7 @@ async def aocs_run_full(
         problem=problem,
         domain=domain,
         risk=risk,
-        fractal_depth=fractal_depth if fractal_depth > 0 else None,
+        fractal_depth=fractal_depth,
         context=context,
         max_sub_agents=max_sub_agents,
     ))
@@ -97,9 +97,9 @@ async def aocs_run_full(
 @mcp.tool()
 async def aocs_analyze(
     problem: str,
-    domain: str = "software",
-    risk: str = "medium",
-    fractal_depth: int = 0,
+    domain: str | None = None,
+    risk: str | None = None,
+    fractal_depth: int | None = None,
     context: str | None = None,
     max_sub_agents: int = 16,
 ) -> AnalysisResult:
@@ -119,7 +119,7 @@ async def aocs_analyze(
 @debug_tool()
 async def aocs_classify(
     problem: str,
-    domain: str = "software",
+    domain: str | None = None,
 ) -> Classification:
     """Classify problem as Type 1 (Known), Type 2 (Partially Known), or Type 3 (Unknown/Discovery)."""
     # Do a minimal Phase 0 to inform classification
@@ -134,7 +134,7 @@ async def aocs_classify(
 @debug_tool()
 async def aocs_phase0_frame(
     problem: str,
-    domain: str = "software",
+    domain: str | None = None,
 ) -> Phase0Result:
     """Full Phase 0 Problem Framing: Parser → Multi-Framer → Assumptions → Uncertainty → Root → Deep Test."""
     parsed = parse(problem, domain)
@@ -263,7 +263,7 @@ async def aocs_judge(
 @debug_tool()
 async def aocs_quality_gates(
     solution: str,
-    risk: str = "medium",
+    risk: str | None = None,
 ) -> list[GateResult]:
     """Apply all 10 quality gates to a proposed solution. Returns pass/fail per gate."""
     from aocs_mcp.pipeline.models import Type2Result, SpecialistOutput, RedTeamOutput, ContrarianOutput, JudgeVerdict

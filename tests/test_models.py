@@ -17,7 +17,7 @@ def test_assumption_defaults():
 def test_analysis_result_empty():
     r = AnalysisResult()
     assert r.problem == ""
-    assert r.domain == "software"
+    assert r.domain is None
     assert r.problem_type == "type2"
     assert r.verdict == "flag_for_review"
     assert len(r.interpretations) == 0

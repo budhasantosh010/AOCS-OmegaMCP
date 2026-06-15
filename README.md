@@ -52,6 +52,17 @@ Run directly from the terminal:
 aocs run "Analyze this problem deeply"
 ```
 
+Check local setup before using a coding agent:
+
+```bash
+aocs doctor
+```
+
+The doctor command checks Python packages, config files, provider environment
+variables, OpenCode availability, and whether OpenCode can connect to the
+`aocs-omega` MCP server. It reports which environment variable names are set,
+but never prints API key values.
+
 Start the MCP server:
 
 ```bash
@@ -92,6 +103,43 @@ summary.md     human-readable summary
 
 This is intentionally separate from Claude/OpenCode/Codex/Cursor settings and
 databases.
+
+Open the AOCS-owned visual dashboard:
+
+```bash
+aocs dashboard
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8765/
+```
+
+The dashboard is independent from coding agents. It reads AOCS run artifacts and
+shows:
+
+- run history
+- final verdict and confidence
+- route and problem type
+- agent timeline
+- visible answers from Specialist, Red Team, Contrarian, Judge, Observer, Shadow
+  Orchestrator, Type 3 agents, and direct-answer runs
+- raw summary
+
+By default, future `trace.json` files store a local response preview for each
+model call:
+
+```json
+{
+  "runtime": {
+    "trace_response_preview_chars": 2000
+  }
+}
+```
+
+Set this value to `0` in `config/models.local.json` if you want traces to keep
+only metadata and prompt hashes.
 
 Override the run directory:
 
@@ -235,7 +283,7 @@ Project-scoped MCP config in `opencode.jsonc`:
         "PYTHONDONTWRITEBYTECODE": "1"
       },
       "enabled": true,
-      "timeout": 30000
+      "timeout": 300000
     }
   }
 }
@@ -246,6 +294,16 @@ Optional global MCP config command:
 ```bash
 opencode mcp add aocs-omega -- "python" "-m" "aocs_mcp"
 ```
+
+On Windows, the global OpenCode config file is usually:
+
+```text
+C:\Users\<you>\.config\opencode\opencode.jsonc
+```
+
+Global config means the MCP server appears in the normal OpenCode GUI/TUI across
+projects. Project config means it appears only inside that project. Prefer
+project config until you intentionally choose global setup.
 
 ### Claude Code
 
@@ -297,6 +355,7 @@ Use the same MCP command:
 Run the script-style tests:
 
 ```bash
+python tests/test_doctor.py
 python tests/test_models.py
 python tests/test_config.py
 python tests/test_scorer.py

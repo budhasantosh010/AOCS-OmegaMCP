@@ -9,7 +9,7 @@ from aocs_mcp.pipeline.models import Interpretation
 def test_parser_basic():
     result = parse("My app crashes on startup")
     assert "My app crashes on startup" in result
-    assert "Domain:" in result
+    assert "Domain: auto-infer from problem" in result
     assert "Input size:" in result
 
 
@@ -25,8 +25,11 @@ ConnectionError: Can't connect to database:5432""")
 
 def test_assumption_mapper_empty():
     mapper = AssumptionMapper()
-    assumptions = mapper.extract([], "software")
-    assert len(assumptions) > 0  # gets domain defaults
+    assumptions = mapper.extract([])
+    assert len(assumptions) > 0  # gets open-domain assumptions
+    assert "The development environment matches production" not in [
+        item.statement for item in assumptions
+    ]
 
 
 def test_assumption_mapper_with_interpretations():

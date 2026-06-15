@@ -230,6 +230,295 @@ VersionPublished : Remote repository contains this documented AOCS runtime versi
 @enduml
 ```
 
+## 2026-06-15 - Global OpenCode Slash Command Install Delta
+
+```plantuml
+@startuml AOCS_Omega_Global_OpenCode_Command_2026_06_15
+
+title AOCS Omega MCP - Global OpenCode Command Install - 2026-06-15
+hide empty description
+
+[*] --> GlobalMcpAlreadyPresent
+GlobalMcpAlreadyPresent : Global OpenCode config already contains aocs-omega MCP entry.
+
+GlobalMcpAlreadyPresent --> GlobalCommandMissing
+GlobalCommandMissing : C:/Users/Lenovo/.config/opencode/commands/aocs-run.md did not exist.
+
+GlobalCommandMissing --> CommandCopied
+CommandCopied : Project .opencode/commands/aocs-run.md copied into global OpenCode commands folder.
+
+CommandCopied --> CommandVerified
+CommandVerified : Global /aocs-run content verified.
+
+CommandVerified --> AvailableEverywhere
+AvailableEverywhere : Normal OpenCode GUI sessions can use /aocs-run globally.
+
+AvailableEverywhere --> [*]
+
+@enduml
+```
+
+## 2026-06-15 - Independent AOCS Dashboard Delta
+
+```plantuml
+@startuml AOCS_Omega_MCP_Independent_Dashboard_2026_06_15
+
+title AOCS Omega MCP - Independent Dashboard - 2026-06-15
+hide empty description
+
+[*] --> UserClarifiesVisibility
+UserClarifiesVisibility : User wants run visibility inside AOCS itself, not inside any coding-agent UI.
+
+UserClarifiesVisibility --> DashboardDecision
+DashboardDecision : Add AOCS-owned local dashboard server.
+
+state "AOCS Runtime Region" as RuntimeRegion {
+  [*] --> RunExecutes
+  RunExecutes : AOCSRunRequest enters standalone runtime.
+  RunExecutes --> AgentsRun
+  AgentsRun : Router calls Direct Answer, Multi-Framer, Specialist, Red Team, Judge, Observer, Shadow, Type 3 agents as needed.
+  AgentsRun --> ArtifactsWritten
+  ArtifactsWritten : request.json, status.json, trace.json, result.json, summary.md written under .aocs/runs.
+  ArtifactsWritten --> TracePreviewStored
+  TracePreviewStored : trace.json stores response_preview up to runtime.trace_response_preview_chars.
+}
+
+state "Dashboard Server Region" as DashboardRegion {
+  [*] --> DashboardCommand
+  DashboardCommand : User runs aocs dashboard.
+  DashboardCommand --> HttpServerStarted
+  HttpServerStarted : Local server binds 127.0.0.1:8765 by default.
+  HttpServerStarted --> RunsEndpoint
+  RunsEndpoint : GET /api/runs lists persisted run summaries.
+  RunsEndpoint --> RunEndpoint
+  RunEndpoint : GET /api/run?id=... loads result, trace, summary, and derived timeline.
+}
+
+state "Browser UI Region" as BrowserRegion {
+  [*] --> BrowserLoads
+  BrowserLoads : Browser opens http://127.0.0.1:8765/.
+  BrowserLoads --> RunHistoryShown
+  RunHistoryShown : UI shows run history and run directory.
+  RunHistoryShown --> SelectedRunShown
+  SelectedRunShown : UI shows verdict, confidence, route, type, calls, recommendation.
+  SelectedRunShown --> AgentTimelineShown
+  AgentTimelineShown : UI shows which AOCS agent ran and what answer/output it produced.
+}
+
+DashboardDecision --> RuntimeRegion
+DashboardDecision --> DashboardRegion
+DashboardDecision --> BrowserRegion
+
+RuntimeRegion --> IndependentVisibility
+DashboardRegion --> IndependentVisibility
+BrowserRegion --> IndependentVisibility
+IndependentVisibility : AOCS owns its visual audit trail independently of OpenCode, Claude, Codex, Cursor, or future agents.
+
+IndependentVisibility --> Tests
+Tests : Full suite passed - 40 tests.
+Tests --> [*]
+
+@enduml
+```
+
+## 2026-06-15 - Shadow Reroute Promotion Delta
+
+```plantuml
+@startuml AOCS_Omega_Shadow_Reroute_Promotion_2026_06_15
+
+title AOCS Omega MCP - Shadow Reroute Promotion - 2026-06-15
+hide empty description
+
+[*] --> UserTranscriptChecked
+UserTranscriptChecked : User transcript shows doctor OK, 2+2 direct-answer OK, and AGI deep run completed.
+
+UserTranscriptChecked --> AGIRunAnalyzed
+AGIRunAnalyzed : AGI run route=type2, verdict=flag_for_review, confidence=88, total_llm_calls=11.
+
+AGIRunAnalyzed --> ShadowFindsCriticalType3
+ShadowFindsCriticalType3 : Shadow orchestrator safe_path=Use shadow: type3 (risk critical).
+
+ShadowFindsCriticalType3 --> GapFound
+GapFound : Shadow warning was recorded but not promoted strongly enough into final recommendations.
+
+GapFound --> OrchestratorUpdated
+OrchestratorUpdated : _build_recommendations now includes conservative shadow reroute when safe_path uses shadow.
+
+OrchestratorUpdated --> AcceptDowngradeRule
+AcceptDowngradeRule : _apply_shadow_escalation downgrades accept to flag_for_review when shadow says safer route.
+
+AcceptDowngradeRule --> RegressionTestAdded
+RegressionTestAdded : Test asserts Type 3 critical shadow reroute appears in recommendations.
+
+RegressionTestAdded --> TestsPassed
+TestsPassed : orchestrator, runtime, and router tests passed.
+
+TestsPassed --> [*]
+
+@enduml
+```
+
+## 2026-06-15 - Beginner Arithmetic Smoke Test Fix Delta
+
+```plantuml
+@startuml AOCS_Omega_Beginner_Arithmetic_Smoke_Fix_2026_06_15
+
+title AOCS Omega MCP - Beginner Arithmetic Smoke Test Fix - 2026-06-15
+hide empty description
+
+[*] --> UserRunsDefaultArithmetic
+UserRunsDefaultArithmetic : User runs python -m aocs_mcp.cli run "what is 2+2?"
+
+UserRunsDefaultArithmetic --> DeepPipelineBug
+DeepPipelineBug : CLI defaults risk=medium and fractal_depth=1 send trivial arithmetic into Type 2 pipeline.
+
+DeepPipelineBug --> JsonFailureObserved
+JsonFailureObserved : Model returns prose for a structured phase; runtime reports Could not extract JSON.
+
+JsonFailureObserved --> DeterministicArithmeticDecision
+DeterministicArithmeticDecision : Obvious two-number arithmetic should be solved by code before any LLM call.
+
+DeterministicArithmeticDecision --> OrchestratorUpdated
+OrchestratorUpdated : _solve_simple_arithmetic handles +, -, *, x, X, and / safely.
+
+OrchestratorUpdated --> ExactCommandRetested
+ExactCommandRetested : python -m aocs_mcp.cli run "what is 2+2?" --no-store
+
+ExactCommandRetested --> SmokeTestPasses
+SmokeTestPasses : route=direct-arithmetic; answer=4; total_llm_calls=0; verdict=accept.
+
+SmokeTestPasses --> RegressionTestsPassed
+RegressionTestsPassed : orchestrator, doctor, router, runtime, provider, OpenCode direct HTTP tests passed.
+
+RegressionTestsPassed --> [*]
+
+@enduml
+```
+
+## 2026-06-15 - Correction: Direct Arithmetic Still Uses LLM Delta
+
+```plantuml
+@startuml AOCS_Omega_Direct_Arithmetic_Uses_LLM_2026_06_15
+
+title AOCS Omega MCP - Direct Arithmetic Uses LLM Correction - 2026-06-15
+hide empty description
+
+[*] --> UserRejectsCodeAnswer
+UserRejectsCodeAnswer : User states AOCS answers should be delivered by LLM reasoning, not hidden code computation.
+
+UserRejectsCodeAnswer --> DesignPrincipleRestated
+DesignPrincipleRestated : Code enforces rails and routing; LLM roles perform reasoning and produce answers.
+
+DesignPrincipleRestated --> DeterministicAnswerRemoved
+DeterministicAnswerRemoved : Code no longer computes 2+2 = 4 itself.
+
+DeterministicAnswerRemoved --> SimpleProblemRouted
+SimpleProblemRouted : Code detects simple arithmetic only to avoid the deep JSON pipeline.
+
+SimpleProblemRouted --> DirectAnswerRoleCalled
+DirectAnswerRoleCalled : router.call(role="direct-answer") produces the answer.
+
+DirectAnswerRoleCalled --> CorrectedResultShape
+CorrectedResultShape : route=direct-answer; total_llm_calls=1; specialist_proposal comes from LLM.
+
+CorrectedResultShape --> RegressionTestUpdated
+RegressionTestUpdated : Tests assert direct-answer role is called and call count is 1.
+
+RegressionTestUpdated --> [*]
+
+@enduml
+```
+
+## 2026-06-15 - No-Install Test Confusion And Doctor Encoding Fix Delta
+
+```plantuml
+@startuml AOCS_Omega_NoInstall_Doctor_Fix_2026_06_15
+
+title AOCS Omega MCP - No-Install Test Confusion And Doctor Fix - 2026-06-15
+hide empty description
+
+[*] --> UserRunsNoInstallDoctor
+UserRunsNoInstallDoctor : User runs python -m aocs_mcp.cli doctor from PowerShell.
+
+UserRunsNoInstallDoctor --> UnicodeDecodeCrash
+UnicodeDecodeCrash : Python subprocess decodes OpenCode output with cp1252 and crashes on Unicode byte.
+
+UnicodeDecodeCrash --> StdoutNoneCrash
+StdoutNoneCrash : subprocess stdout becomes None and doctor calls .strip() on None.
+
+StdoutNoneCrash --> DoctorFixed
+DoctorFixed : _run_command uses UTF-8, errors=replace, and (stdout or '').strip().
+
+DoctorFixed --> UserRunsDefaultTwoPlusTwo
+UserRunsDefaultTwoPlusTwo : User runs python -m aocs_mcp.cli run "what is 2+2?"
+
+UserRunsDefaultTwoPlusTwo --> DeepDefaultRoute
+DeepDefaultRoute : Default risk=medium and fractal_depth=1 cause Type 2 over-analysis.
+
+DeepDefaultRoute --> CorrectSmokeCommand
+CorrectSmokeCommand : Use --risk low --fractal-depth 0 --max-sub-agents 1 for simple smoke tests.
+
+CorrectSmokeCommand --> SecurityReminder
+SecurityReminder : Pasted API keys in chat/transcripts should be rotated.
+
+SecurityReminder --> [*]
+
+@enduml
+```
+
+## 2026-06-15 - Setup Hardening And Coauthor Check Delta
+
+```plantuml
+@startuml AOCS_Omega_Setup_Hardening_And_Coauthors_2026_06_15
+
+title AOCS Omega MCP - Setup Hardening And Coauthor Check - 2026-06-15
+hide empty description
+
+[*] --> UserAsksNext
+UserAsksNext : User asks what is next and asks to remove Claude as GitHub coauthor.
+
+UserAsksNext --> GitHistoryInspected
+GitHistoryInspected : Recent and full git history inspected for authors, committers, and Co-authored-by trailers.
+
+GitHistoryInspected --> NoClaudeCoauthorFound
+NoClaudeCoauthorFound : Only budhasantosh010 appears as author and committer; no Claude coauthor metadata found.
+
+NoClaudeCoauthorFound --> NoHistoryRewrite
+NoHistoryRewrite : Decision: do not rewrite Git history because there is no coauthor metadata to remove.
+
+NoHistoryRewrite --> DoctorCommandAdded
+DoctorCommandAdded : aocs doctor added as beginner-facing setup diagnostic.
+
+state "DoctorCommandAdded" as DoctorCommandAdded {
+  [*] --> ChecksPython
+  ChecksPython --> ChecksPackages
+  ChecksPackages --> ChecksConfigFiles
+  ChecksConfigFiles --> ChecksProviderEnvNames
+  ChecksProviderEnvNames --> ChecksOpenCodeConfig
+  ChecksOpenCodeConfig --> ChecksOpenCodeBinary
+  ChecksOpenCodeBinary --> ChecksOpenCodeMCP
+}
+
+DoctorCommandAdded --> DoctorJsonAdded
+DoctorJsonAdded : aocs doctor --json added for automation.
+
+DoctorJsonAdded --> DoctorNoOpenCodeAdded
+DoctorNoOpenCodeAdded : aocs doctor --no-opencode added for non-OpenCode hosts.
+
+DoctorNoOpenCodeAdded --> WindowsCmdFix
+WindowsCmdFix : Doctor now resolves opencode and opencode.cmd.
+
+WindowsCmdFix --> VerificationPassed
+VerificationPassed : doctor CLI, JSON output, doctor tests, and router regression test passed.
+
+VerificationPassed --> CurrentDoctorState
+CurrentDoctorState : Full doctor reports OpenCode MCP connected; only warning is missing provider API env var.
+
+CurrentDoctorState --> [*]
+
+@enduml
+```
+
 ## Future Update Template
 
 Add a new dated section with either a full replacement statechart or a small delta diagram.
@@ -270,6 +559,164 @@ TempWriteTestsPassedEscalated --> CompileallSkippedAsEnvironmentIssue
 CompileallSkippedAsEnvironmentIssue : compileall only failed because .pyc cache writes were blocked.
 CompileallSkippedAsEnvironmentIssue --> ReadyToCommitAndPush
 ReadyToCommitAndPush : Current code, adapters, tests, and docs are ready for GitHub publish.
+
+@enduml
+```
+
+## 2026-06-15 - Real OpenCode MCP Smoke Test Delta
+
+```plantuml
+@startuml AOCS_Omega_MCP_Real_OpenCode_Smoke_2026_06_15
+
+title AOCS Omega MCP - Real OpenCode MCP Smoke Test - 2026-06-15
+hide empty description
+
+[*] --> RepoClean
+RepoClean : main matched origin/main before test.
+RepoClean --> OpenCodeDetected
+OpenCodeDetected : OpenCode 1.16.0 was installed and auth list showed real credentials.
+OpenCodeDetected --> EnvKeyMissing
+EnvKeyMissing : OPENCODE_API_KEY was not set in the shell environment.
+EnvKeyMissing --> MCPListRun
+MCPListRun : opencode mcp list was run from the project repo.
+MCPListRun --> MCPConnected
+MCPConnected : aocs-omega connected through python -m aocs_mcp.
+MCPConnected --> AgentSmokeRun
+AgentSmokeRun : opencode run asked real agent to call aocs_run_full once.
+AgentSmokeRun --> ToolInvoked
+ToolInvoked : OpenCode invoked aocs-omega_aocs_run_full with the low-risk 2+2 input.
+ToolInvoked --> RuntimeProviderError
+RuntimeProviderError : AOCS runtime returned OPENCODE_API_KEY not set in environment.
+RuntimeProviderError --> PartialSuccessConclusion
+PartialSuccessConclusion : MCP integration works; full run needs OPENCODE_API_KEY supplied to OpenCode's environment.
+PartialSuccessConclusion --> NextTestReady
+NextTestReady : Set OPENCODE_API_KEY in shell, then rerun OpenCode agent MCP smoke test.
+
+@enduml
+```
+
+## 2026-06-15 - Real OpenCode Chat-Style MCP Success Delta
+
+```plantuml
+@startuml AOCS_Omega_MCP_Real_OpenCode_Chat_Success_2026_06_15
+
+title AOCS Omega MCP - Real OpenCode Chat-Style MCP Success - 2026-06-15
+hide empty description
+
+[*] --> UserRequestsRealChatTest
+UserRequestsRealChatTest : Test should behave like OpenCode GUI/chat problem solving.
+
+UserRequestsRealChatTest --> ApiKeyProcessEnv
+ApiKeyProcessEnv : OPENCODE_API_KEY is supplied only to the process environment.
+
+ApiKeyProcessEnv --> FirstMediumRun
+FirstMediumRun : OpenCode calls aocs_run_full for medium architecture question.
+
+FirstMediumRun --> TimeoutFailure
+TimeoutFailure : MCP error -32001 Request timed out at 30000 ms.
+
+TimeoutFailure --> BadManualFallbackObserved
+BadManualFallbackObserved : OpenCode manually emulated AOCS using Markdown skill after timeout.
+
+BadManualFallbackObserved --> TimeoutIncreased
+TimeoutIncreased : Project OpenCode MCP timeout changed to 300000 ms.
+
+TimeoutIncreased --> StrictLowRiskRun
+StrictLowRiskRun : Strict test forbids skill fallback and calls aocs_run_full for what is 2+2.
+
+StrictLowRiskRun --> LowRiskSuccess
+LowRiskSuccess : MCP_SUCCESS=4; run 20260615T050331Z-61a33850 completed; 1 LLM call; accept.
+
+LowRiskSuccess --> StrictMediumRun
+StrictMediumRun : Strict architecture test calls aocs_run_full with max_sub_agents=12.
+
+StrictMediumRun --> MediumSuccess
+MediumSuccess : MCP_SUCCESS; run 20260615T050411Z-56ffec8b completed; 11 LLM calls; flag_for_review; confidence 90.
+
+MediumSuccess --> VerifiedOperationalPath
+VerifiedOperationalPath : OpenCode agent -> MCP -> AOCSRuntime -> LLMRouter -> OpenCode Go direct HTTPS -> AOCS result.
+
+VerifiedOperationalPath --> [*]
+
+@enduml
+```
+
+## 2026-06-15 - Open-Domain Request Boundary Correction Delta
+
+```plantuml
+@startuml AOCS_Omega_MCP_Open_Domain_Request_Boundary_2026_06_15
+
+title AOCS Omega MCP - Open-Domain Request Boundary Correction - 2026-06-15
+hide empty description
+
+[*] --> UserRejectsHiddenDefaults
+UserRejectsHiddenDefaults : User states every problem is new and AOCS must not force software/medium defaults.
+
+state "Previous Behavior" as PreviousBehavior {
+  [*] --> AdapterInjectedDomain
+  AdapterInjectedDomain : CLI/MCP/slash command could inject domain=software.
+  AdapterInjectedDomain --> AdapterInjectedRisk
+  AdapterInjectedRisk : CLI/MCP/slash command could inject risk=medium.
+  AdapterInjectedRisk --> SentinelDepth
+  SentinelDepth : CLI used -1 sentinel and MCP used 0 default for fractal depth.
+  SentinelDepth --> ProblemPreShaped
+  ProblemPreShaped : AOCS received a pre-shaped request before Phase 0 reasoning.
+}
+
+UserRejectsHiddenDefaults --> BoundaryRedesigned
+
+state "Corrected Request Boundary" as BoundaryRedesigned {
+  [*] --> DomainOptional
+  DomainOptional : domain omitted means request.domain=null.
+  DomainOptional --> RiskOptional
+  RiskOptional : risk omitted means request.risk=null.
+  RiskOptional --> DepthOptional
+  DepthOptional : fractal_depth omitted means request.fractal_depth=null.
+  DepthOptional --> ExplicitHintsOnly
+  ExplicitHintsOnly : adapters pass domain/risk/depth only when user explicitly gives them.
+}
+
+BoundaryRedesigned --> Phase0OpenDomain
+
+state "Open-Domain Phase 0" as Phase0OpenDomain {
+  [*] --> ParserAutoInfer
+  ParserAutoInfer : Parser prints Domain auto-infer from problem.
+  ParserAutoInfer --> OpenLenses
+  OpenLenses : Multi-Framer uses generic domain/evidence/safety/frontier lenses.
+  OpenLenses --> OpenAssumptions
+  OpenAssumptions : Assumption Mapper uses open-domain assumptions unless domain is explicit.
+}
+
+Phase0OpenDomain --> InternalClassification
+
+state "Internal AOCS Classification" as InternalClassification {
+  [*] --> ClassifierUsesEvidence
+  ClassifierUsesEvidence : Classifier decides Type 1/2/3 and risk after Phase 0.
+  ClassifierUsesEvidence --> RiskMayStillBeMedium
+  RiskMayStillBeMedium : risk=medium may appear as an internal decision, not a caller default.
+}
+
+InternalClassification --> Type3OpenDomain
+
+state "Open-Domain Type 3" as Type3OpenDomain {
+  [*] --> GenericDiscoveryLenses
+  GenericDiscoveryLenses : Type 3 uses Domain Inference, First Principles, Evidence, Systems, Safety.
+  GenericDiscoveryLenses --> NoSoftwareUnlessEvidence
+  NoSoftwareUnlessEvidence : Prompt says do not assume software unless evidence points there.
+}
+
+Type3OpenDomain --> RegressionTests
+
+state "Regression Tests" as RegressionTests {
+  [*] --> OpenDomainTestAdded
+  OpenDomainTestAdded : tests/test_open_domain_defaults.py added.
+  OpenDomainTestAdded --> SuitePassed
+  SuitePassed : python -X utf8 -B -m pytest tests -p no:cacheprovider => 38 passed.
+}
+
+RegressionTests --> CurrentContract
+CurrentContract : Current rule - do not provide domain/risk/fractal_depth unless user explicitly gives them.
+CurrentContract --> [*]
 
 @enduml
 ```
