@@ -463,6 +463,25 @@ Dashboard: no desktop or mobile horizontal overflow
 Fresh paid-model call: not run because no provider key is set in this terminal
 ```
 
+### Published state
+
+```plantuml
+@startuml AOCS_Omega_Parity_Publication_2026_06_18
+title AOCS Omega - Complete Parity Publication - 2026-06-18
+
+[*] --> VerifiedLocally
+VerifiedLocally : 81 tests, Ruff, compileall, security, credential, MCP, and dashboard checks passed.
+VerifiedLocally --> Committed
+Committed : d322055 [verified] feat: implement complete AOCS skill parity
+Committed --> Pushed
+Pushed : origin/main advanced from 8c10c3f to d322055
+Pushed --> NoCoauthorTrailer
+NoCoauthorTrailer : commit contains no Co-authored-by trailer
+NoCoauthorTrailer --> [*]
+
+@enduml
+```
+
 ## 2026-06-15 - Global OpenCode Slash Command Install Delta
 
 ```plantuml

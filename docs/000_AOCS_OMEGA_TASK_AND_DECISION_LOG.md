@@ -1914,6 +1914,34 @@ Those old artifacts correctly continue to display their old duplicate Observer
 and old assumption-audit results. New runs use the corrected engine and will not
 reproduce those historical behaviors.
 
+### GitHub publication record
+
+The complete verified implementation was committed as:
+
+```text
+d322055 [verified] feat: implement complete AOCS skill parity
+```
+
+Push result:
+
+```text
+8c10c3f..d322055  main -> main
+```
+
+Remote:
+
+```text
+https://github.com/budhasantosh010/AOCS-OmegaMCP.git
+```
+
+The commit author is:
+
+```text
+budhasantosh010 <budhasantosh010@users.noreply.github.com>
+```
+
+No `Co-authored-by` trailer was added.
+
 ## 2026-06-15 - Independent AOCS Dashboard and Visible Agent Answers
 
 ### Trigger
