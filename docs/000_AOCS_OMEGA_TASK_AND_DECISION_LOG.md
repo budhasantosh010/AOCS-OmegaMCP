@@ -1317,6 +1317,603 @@ python -m aocs_mcp.cli doctor --no-opencode
 
 All passed.
 
+---
+
+## 2026-06-18 - Updated Skill Re-Audit And Complete Runtime Parity
+
+### User request
+
+The user asked for a new audit of the updated AOCS Omega skill at:
+
+```text
+C:\Users\Lenovo\Music\AOCS-OMEGA\main resource\my-aocs-omega
+```
+
+The actual Windows folder uses the Omega character in the path. The operational
+skill file contains 520 lines and defines the complete AOCS-Omega behavior.
+
+The user requirement was stronger than "add the important parts." The user
+required every operational part of the skill to be implemented and reachable
+through the standalone engine, with nothing silently left as a Markdown-only
+instruction.
+
+### Definition of complete parity
+
+For this implementation, "complete parity" means:
+
+1. Every skill protocol has a code-owned trigger or deterministic position in
+   the pipeline.
+2. Every required model role is called by the engine, not remembered by the
+   outer coding agent.
+3. Every protocol produces structured data that can be persisted and displayed.
+4. Conditional protocols run when their stated condition is true.
+5. The engine records what happened, including failures, reroutes, assumptions,
+   rejected ideas, and learning.
+6. The normal MCP surface exposes one complete entrypoint so a host agent cannot
+   accidentally skip phases.
+
+This does not mean AOCS can manufacture missing physical evidence. A runtime can
+enforce reasoning, challenge, traceability, and verification attempts. Real
+laboratory tests, production measurements, legal review, or other external
+reality checks still require the relevant external tool or qualified human.
+AOCS now records that boundary instead of pretending that model prose is
+physical proof.
+
+### Architecture decision retained
+
+The architecture remains:
+
+```text
+AOCS Core Runtime
+-> deterministic orchestrator
+-> model router
+-> provider APIs or configured host adapters
+-> persisted AOCS artifacts
+
+Thin host adapter
+-> one public MCP tool: aocs_run_full
+-> or CLI: aocs run
+```
+
+The outer coding agent remains a caller. It does not become the AOCS workflow.
+
+### Test-driven implementation method
+
+The work followed RED, GREEN, REFACTOR cycles.
+
+Examples of observed RED failures:
+
+- Complete result models did not exist.
+- Context was not preserved through Phase 0.
+- Model-derived scoring and classification were not wired.
+- Deep Test failure did not return to Multi-Framer.
+- Blackboard values were truncated.
+- Type 1 did not return real verification/TMR/prover artifacts.
+- Swarm peer audit was incomplete.
+- Type 3 stopped before mutation, pruning, serendipity, simulation, paradigm,
+  and quest behavior.
+- Blindspot and fractal modules did not exist.
+- Kill-switch and Universal Goal protocols did not exist.
+- Quality gates did not consume real verifier/TMR/prover/observer outputs.
+- The Observer was called twice.
+- Shadow only warned instead of executing the safer route.
+- Chaos Variable did not change the conclusion.
+- Paradigm alerts did not run breakthrough protocols.
+- The canonical orchestrator did not expose memory and learning artifacts.
+- The default role map omitted newly introduced agents.
+- The default model-call budget was too small for critical runs.
+- The dashboard omitted the new protocol outputs.
+- Two public MCP tools were registered instead of one.
+- Type 1 reused the Type 2 Specialist prompt and ran Prover before critical TMR.
+- The Volume Swarm existed but was unreachable from normal classification.
+- Higher-Dimension Reframing discarded its new root problem.
+- Memory Auditor treated different assumptions as contradictions.
+- Direct low-risk runs skipped blackboard and flywheel learning.
+
+Each failure was reproduced in a focused test before the production change.
+
+### Complete implementation record
+
+#### Structured result contract
+
+`aocs_mcp/pipeline/models.py` now represents:
+
+- deterministic verification
+- recursive fractal challenges
+- blindspot results
+- kill-switch state
+- quests
+- break-framework output
+- Universal Goal roles and closed loop
+- swarm output
+- blackboard, graveyard, and learning entries
+- full attempt history
+- paradigm reframe evidence
+- classification decomposition and chunks
+
+Decision: protocol outputs must be data, not only prose, so they survive
+handoffs and can be inspected without reading model prompts.
+
+#### Phase 0
+
+The engine now performs:
+
+```text
+Parser + supplied context
+-> Multi-Framer
+-> Assumption Mapper
+-> Uncertainty Quantifier
+-> Root Problem Extractor
+-> four-question Deep Test
+```
+
+If the Deep Test fails, the engine returns to Multi-Framer with the rejected
+root and all four answers. It allows two reframes, for three total attempts.
+
+Decision: the loop is code-owned. The model cannot skip the return transition.
+
+#### Phase 1
+
+The Scoring Engine now asks a model to score every proposed vertical on:
+
+- Impact
+- Leverage
+- Urgency
+- Structural Learning Value
+
+Code owns the official weighting:
+
+```text
+I * 0.35 + L * 0.25 + U * 0.20 + V * 0.20
+```
+
+Code also owns Noise, Small, Big, and Critical zone assignment.
+
+Decision: the model supplies judgment; code supplies the fixed formula.
+
+#### Classification and Volume Swarm selection
+
+Classification is now a structured model call that selects:
+
+- Type 1, Type 2, or Type 3
+- low, medium, high, or critical risk
+- fractal depth 0 through 3
+- whether the work is decomposable
+- concrete chunks for a Volume Swarm
+
+If a Type 2 task is decomposable, the canonical route runs:
+
+```text
+N workers
+-> peer audits
+-> independent auditor
+-> synthesis
+-> Type 2 high-stakes debate using the synthesized evidence
+```
+
+Decision: the swarm is no longer a disconnected helper.
+
+#### Type 1 exact route
+
+Type 1 now uses a dedicated Type 1 Specialist prompt, not the generic Type 2
+Specialist prompt.
+
+The role must apply:
+
+```text
+Question
+-> Cut
+-> Simplify
+-> Speed up
+-> Automate
+```
+
+The exact critical route is:
+
+```text
+Type 1 Specialist
+-> Deterministic Verifier
+-> TMR when critical
+-> Prover
+```
+
+Critical TMR produces two independent alternatives and a separate comparison.
+
+#### Type 2 exact route
+
+The Type 2 route remains blind where required:
+
+```text
+Specialist
+-> anonymized Red Team
+-> Contrarian
+-> Deception Detector
+-> blind Judge
+```
+
+High and critical outputs include an external review hook.
+
+#### Type 3 complete route
+
+The Type 3 engine now executes:
+
+```text
+multiple lenses
+-> first principles
+-> competing hypotheses
+-> Idea Mutator
+-> Ruthless Pruner
+-> Protected Weirdness Reserve
+-> Graveyard archive
+-> Serendipity Injector
+-> thought experiments and simulations
+-> anomaly capture
+-> Paradigm Detector
+-> Graveyard resurrection check
+-> Quest Tracker with 10 percent protected allocation
+```
+
+Rejected ideas are never silently deleted. Their reason and assumptions are
+stored in the Graveyard.
+
+#### Fractal verification
+
+Depth behavior is explicit:
+
+- Depth 0: no recursive challenge.
+- Depth 1: Red Team, Contrarian, Judge.
+- Depth 2: depth 1 plus Observer and Shadow review of the verification.
+- Depth 3: a new Red Team, Contrarian, Judge challenge of the second-order
+  verification.
+
+The executed depth and every challenge are stored in `FractalResult`.
+
+#### Blindspot discipline
+
+The Blindspot Hunter answers all five mandatory questions:
+
+- What perspective is missing?
+- What data is missing?
+- What would an outsider notice?
+- What would falsify the conclusion?
+- What simple factor may be overlooked?
+
+It also returns recommended actions.
+
+#### Shadow Orchestrator
+
+Shadow classification is independent.
+
+If Shadow selects a more conservative route, the engine now executes that route
+once. The route record shows transitions such as:
+
+```text
+type1->shadow:type2
+```
+
+Decision: a safety reroute is an execution decision, not merely warning text.
+Conservatism is compared by risk first, then problem type (`type3` over `type2`
+over `type1`), then fractal depth. This means equal-risk disagreements no longer
+automatically favor the original route.
+
+#### Observer and Chaos Variable
+
+The Observer runs once and its artifact is reused by Gate 9.
+
+If it injects a Chaos Variable, the engine calls a separate
+`chaos-reconsideration` role. That role must rebuild the answer from first
+principles. The revised answer and recalibrated confidence replace the previous
+conclusion.
+
+#### Ten quality gates
+
+The ten gates now consume actual artifacts:
+
+1. Specialist confidence
+2. Deterministic verification
+3. Red Team, Contrarian, and Judge review
+4. Reasoning trajectory
+5. Falsifiable prediction
+6. Concrete adversarial flaws
+7. Actual critical-risk TMR consensus
+8. Actual Prover claims
+9. The one Observer artifact
+10. Human review threshold
+
+Decision: no gate may claim that a protocol ran when its artifact is absent.
+
+#### Memory and source decay
+
+Blackboard entries preserve:
+
+- exact value
+- provenance
+- confidence
+- timestamp
+
+Source decay is applied before delivery.
+
+Memory Auditor now checks only identity-bearing claim keys such as `claim:`,
+`fact:`, and `decision:` for conflicting values. Different assumptions are a
+set, not a contradiction.
+
+Unresolved contradictions or low-confidence critical entries cap confidence at
+94 and prevent an `accept` verdict.
+
+#### Kill-switch
+
+When the same approach fails quality twice:
+
+```text
+failure 1
+-> one bounded retry of the same approach
+-> failure 2
+-> no third same-path attempt
+-> Analogical Mining
+-> Higher-Dimension Reframing
+-> Future Backcasting
+-> Break-Framework
+-> fresh Phase 0
+-> fresh scoring
+-> fresh classification
+```
+
+The kill-switch result stores the failure count, combined reasons, reframed root
+problem, and new classification.
+
+#### Breakthrough protocols
+
+Cross-Domain Analogical Mining now also requests a concrete feasibility test.
+
+Higher-Dimension Reframing preserves the actual reframed problem. On a Type 3
+paradigm alert, that new problem is fed into fresh framing, scoring, and
+classification. The result is stored as `paradigm_reframe`.
+
+Future Backcasting preserves its milestones and the "maybe that became yes"
+turning point.
+
+Break-Framework stores temporary phase order, temporary roles, verification
+order, and proposal.
+
+#### Universal Goal-Achievement Protocol
+
+For novel Type 3 goals such as "build a complete system," the engine runs:
+
+```text
+define the single job
+-> discover goal-specific roles
+-> identify existing pieces
+-> connect a closed loop
+-> identify the feedback role
+-> define a crude working version
+-> measure role costs
+-> find the root inefficiency
+-> replace it with an outcome-equivalent architecture
+-> recalculate cost
+```
+
+Decision: the goal dictates its roles. The runtime does not force a generic
+fixed role template.
+
+#### Learning and flywheel
+
+Every completed normal or direct run records:
+
+- reusable heuristic
+- success or failure pattern
+- one of the four error classes when unsuccessful:
+  - Wrong assumption
+  - Flawed model
+  - Execution error
+  - Random variance
+- an explicit confidence-calibration update
+
+The calibration update is stored as `model_update` on the Blackboard.
+
+#### Direct low-risk collapse
+
+Simple low-risk arithmetic still uses exactly one LLM answer call. Code does not
+compute the answer secretly.
+
+The direct route now also records:
+
+- structural verification
+- approach history
+- Blackboard provenance
+- flywheel learning
+
+Decision: directness does not mean loss of traceability.
+
+#### Runtime, artifacts, and dashboard
+
+Persisted runs include:
+
+```text
+request.json
+status.json
+trace.json
+result.json
+blackboard.json
+graveyard.json
+learning.json
+summary.md
+```
+
+The standalone dashboard can derive visible entries for:
+
+- Type 1 and Type 2 specialists
+- verifier
+- TMR
+- Prover
+- Red Team
+- Contrarian
+- Deception Detector
+- Judge
+- Volume Swarm
+- all Type 3 stages
+- Quest Tracker
+- Blindspot Hunter
+- Fractal Verification
+- Observer
+- Shadow
+- quality gates
+- Kill Switch
+- breakthrough protocols
+- Break-Framework
+- Universal Goal Protocol
+- paradigm reframe
+- Memory Audit
+- Learning Flywheel
+
+#### Public MCP surface
+
+The normal MCP server now registers only:
+
+```text
+aocs_run_full
+```
+
+`aocs_analyze` remains an internal Python compatibility function but is not
+advertised to MCP clients.
+
+Decision: one public tool minimizes context usage and prevents partial pipeline
+execution.
+
+#### Model-call budget
+
+The default budget changed from 16 to 64 model calls in:
+
+- portable run request
+- CLI
+- MCP tool
+- orchestrator
+
+Decision: a default budget must be large enough for critical fractal depth,
+kill-switch escape, and Type 3 breakthrough paths. Users may still lower it
+explicitly.
+
+### Skill compliance matrix
+
+The user required documentation to remain in exactly two living files. For that
+reason, the compliance matrix is embedded here instead of creating a third
+documentation source.
+
+| Skill section | Runtime implementation | Main evidence | Status |
+| --- | --- | --- | --- |
+| 1 Core principles | Direct path, risk-scaled expansion, independent roles, provenance, truth-calibrated verdicts | orchestrator, router, blackboard | Implemented |
+| 2 Type classification | Model classification with code validation | `routing/classifier.py` | Implemented |
+| 3 Phase 0 | Parser, 3-5 frames, assumptions, uncertainty, root, Deep Test reframe loop | `phase0/*`, orchestrator | Implemented |
+| 4 Phase 1 | Model I/L/U/V scoring plus code-owned formula and zones | `phase1/scorer.py` | Implemented |
+| 5 Fractal depth | Explicit depth 0/1/2/3 call sequences | `quality/fractal.py` | Implemented |
+| 6 Blackboard and Graveyard | Provenance, confidence, timestamp, decay, archive, resurrection | `memory/*` | Implemented |
+| 7.1 Type 1 | Dedicated Specialist, verifier, critical TMR, Prover | `type1_pipe.py` | Implemented |
+| 7.2 Type 2 triad | Blind debate, deception scan, Judge, external review | `type2_pipe.py` | Implemented |
+| 7.2.2 Volume Swarm | Worker, peer audit, auditor, synthesis, canonical selection | `swarm.py`, orchestrator | Implemented |
+| 7.3 Type 3 | All nine discovery stages and protected quest | `type3_pipe.py` | Implemented |
+| 8 Shadow | Independent classification and safer route execution | `shadow_orch.py`, orchestrator | Implemented |
+| 9 Observer | Groupthink/overconfidence and first-principles Chaos reconsideration | `observer.py`, orchestrator | Implemented |
+| 10 Quality gates | Ten gates use real artifacts | `quality/gates.py` | Implemented |
+| 11 Memory Auditor | Claim conflict detection, unverified entries, confidence downgrade | `memory/auditor.py` | Implemented |
+| 12 Kill-switch | Two failures, no third attempt, reframe and reclassify | `quality/kill_switch.py`, orchestrator | Implemented |
+| 13 Quest Tracker | 10 percent protected quest, archive/resurrect operations | `routing/quest_tracker.py` | Implemented |
+| 14.1 Analogical Mining | Structural analogy, transplant, feasibility test | `analogical_mining.py` | Implemented |
+| 14.2 Higher Dimension | Preserved reframe and fresh Phase 0/scoring/classification | `higher_dimension.py`, orchestrator | Implemented |
+| 14.3 Future Backcast | Milestones, failures, maybe-to-yes, frame shift, roadmap | `future_backcast.py` | Implemented |
+| 14.4 Break-Framework | Temporary solving structure and verification order | `break_framework.py` | Implemented |
+| 14.5 Universal Goal | Job, roles, pieces, loop, crude version, inefficiency replacement | `universal_goal.py` | Implemented |
+| 15 Learning | Heuristic, four error classes, calibration update | `learning/flywheel.py` | Implemented |
+| 16 Output | Structured labeled artifacts, confidence, recommendations, dashboard | models, runtime, dashboard | Implemented |
+| 17 Domain adaptation | Open-domain parser/prompts and optional explicit hints | parser, framer, classifier, Type 3 | Implemented |
+
+### New and changed tests
+
+Focused test files now cover:
+
+```text
+tests/test_skill_compliance.py
+tests/test_memory_complete.py
+tests/test_routes_complete.py
+tests/test_type3_complete.py
+tests/test_fractal_and_blindspot.py
+tests/test_kill_switch.py
+tests/test_universal_goal.py
+tests/test_quality_complete.py
+tests/test_orchestrator_complete.py
+tests/test_server_surface.py
+```
+
+### Verification result before browser and GitHub publication
+
+```text
+python -m pytest tests -q
+81 passed
+```
+
+No test is currently failing.
+
+### Security and settings statement
+
+- No API key was added to source code or documentation.
+- Provider secrets remain environment variables.
+- No global coding-agent configuration was rewritten by this implementation.
+- AOCS artifacts remain inside the isolated AOCS run directory.
+- The public MCP context remains one tool.
+
+### Final local verification evidence
+
+Commands and results:
+
+```text
+python -m pytest tests -q
+81 passed
+
+ruff check .
+All checks passed
+
+python -m compileall -q aocs_mcp
+compileall: ok
+
+git diff --check
+ok
+```
+
+Security checks:
+
+- No hardcoded credential pattern was found in added lines.
+- No shell injection, `eval`, `exec`, unsafe pickle, or formatted SQL pattern
+  was found.
+- The OpenCode API key and GitHub token previously pasted in chat are not
+  present anywhere in the repository.
+
+Doctor result:
+
+```text
+failures: 0
+warnings: 1
+OpenCode MCP: aocs-omega connected
+```
+
+The one warning is that this Codex terminal does not currently have a supported
+provider API key environment variable. A fresh paid-model call was therefore
+not attempted. The implementation did not reuse or write a secret from chat.
+
+Dashboard verification:
+
+```text
+URL: http://127.0.0.1:8766/
+Desktop: 1265 px client width, 1265 px scroll width
+Mobile: 375 px client width, 375 px scroll width
+```
+
+There was no horizontal overflow at either size. Desktop retained the run-list
+and detail layout. Mobile collapsed to one column with all five metrics and all
+timeline steps still present.
+
+The dashboard was tested against historical run artifacts from June 15, 2026.
+Those old artifacts correctly continue to display their old duplicate Observer
+and old assumption-audit results. New runs use the corrected engine and will not
+reproduce those historical behaviors.
+
 ## 2026-06-15 - Independent AOCS Dashboard and Visible Agent Answers
 
 ### Trigger

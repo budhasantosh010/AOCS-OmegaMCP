@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import time
 from typing import Any
 
@@ -44,11 +45,29 @@ class Graveyard:
 
     def find_candidates(self, new_assumptions: str) -> list[dict]:
         """Find ideas whose failed assumptions may now be invalid."""
+        new_terms = self._significant_terms(new_assumptions)
         candidates = []
         for entry in self._dead:
-            if not entry["resurrected"]:
+            prior_terms = self._significant_terms(
+                f"{entry.get('assumptions', '')} {entry.get('reason', '')}"
+            )
+            if not entry["resurrected"] and new_terms.intersection(prior_terms):
                 candidates.append(entry)
         return candidates[:5]
+
+    @staticmethod
+    def _significant_terms(text: str) -> set[str]:
+        stopwords = {
+            "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
+            "available", "evidence", "has", "in", "is", "it", "new", "no",
+            "not", "now", "of", "on", "or", "requires", "shows", "the", "this",
+            "to", "unavailable", "was", "were", "with",
+        }
+        return {
+            token
+            for token in re.findall(r"[a-z0-9]+", text.lower())
+            if len(token) >= 4 and token not in stopwords
+        }
 
     def all(self) -> list[dict]:
         return list(self._dead)

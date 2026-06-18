@@ -44,4 +44,12 @@ class HigherDimension:
             cross_domain_sources=[],
             solution_principle=data.get("higher_dimension_view", ""),
             adapted_proposal=data.get("adapted_proposal", ""),
+            reframed_problem=data.get("reframed_problem", ""),
+            details={
+                "current_frame": data.get("current_frame", ""),
+                "higher_dimension_view": data.get(
+                    "higher_dimension_view",
+                    "",
+                ),
+            },
         )

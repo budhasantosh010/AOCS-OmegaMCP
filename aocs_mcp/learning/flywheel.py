@@ -1,11 +1,11 @@
-"""Flywheel — After-action learning: heuristic capture + error classification."""
+"""After-action heuristic capture, error classification, and calibration."""
 
-from aocs_mcp.pipeline.models import AnalysisResult, FlywheelEntry
 from aocs_mcp.memory.blackboard import Blackboard
+from aocs_mcp.pipeline.models import AnalysisResult, FlywheelEntry
 
 
 class Flywheel:
-    """Captures heuristics and classifies errors for continuous improvement."""
+    """Capture reusable learning and update future confidence calibration."""
 
     def capture(
         self,
@@ -14,58 +14,89 @@ class Flywheel:
         blackboard: Blackboard,
     ) -> list[FlywheelEntry]:
         entries: list[FlywheelEntry] = []
-
-        # Heuristic: what pattern worked?
         heuristic = self._extract_heuristic(result)
-        if heuristic:
-            entries.append(FlywheelEntry(
-                heuristic=heuristic,
-                pattern=result.route_taken,
-                success=result.verdict == "accept",
-            ))
+        calibration = (
+            "Maintain calibration for this verified route."
+            if result.verdict == "accept"
+            else (
+                "Reduce confidence for this route until new evidence resolves "
+                "the failure."
+            )
+        )
 
-        # Error classification (if verdict was flag_for_review or reject)
-        if result.verdict in ("flag_for_review", "reject"):
-            error_type = self._classify_error(result)
-            if error_type:
-                entries.append(FlywheelEntry(
+        if heuristic:
+            entries.append(
+                FlywheelEntry(
                     heuristic=heuristic,
-                    error_type=error_type,
+                    pattern=result.route_taken,
+                    success=result.verdict == "accept",
+                    calibration_update=calibration,
+                )
+            )
+
+        if result.verdict in ("flag_for_review", "reject"):
+            entries.append(
+                FlywheelEntry(
+                    heuristic=(
+                        heuristic
+                        or "No successful heuristic; preserve the failed pattern"
+                    ),
+                    error_type=self._classify_error(result),
                     pattern=result.route_taken,
                     success=False,
-                ))
+                    calibration_update=calibration,
+                )
+            )
 
-        # Store in blackboard
         for entry in entries:
             blackboard.store(
                 key="flywheel",
-                value=entry.model_dump_json(),
+                value=entry.model_dump(),
                 provenance="Reality-Tested",
                 confidence=0.8,
             )
-
+            blackboard.store(
+                key="model_update",
+                value={
+                    "problem": problem,
+                    "pattern": entry.pattern,
+                    "error_type": entry.error_type,
+                    "calibration_update": entry.calibration_update,
+                },
+                provenance="Reality-Tested",
+                confidence=0.8,
+            )
         return entries
 
     @staticmethod
     def _extract_heuristic(result: AnalysisResult) -> str | None:
-        """Extract a reusable thinking pattern."""
         if result.problem_type == "type1" and result.verdict == "accept":
-            return "Known problems with clear rules → direct Specialist + Verifier is sufficient"
-        elif result.problem_type == "type2":
-            return "Partially-known problems → Triad (Spec + RT + Contrarian + Judge) catches blind spots"
-        elif result.problem_type == "type3":
-            return "Unknown problems → Lens + FP + Hypothesis generation enables discovery"
+            return (
+                "Known problems with clear rules use a direct Specialist and "
+                "deterministic verification."
+            )
+        if result.problem_type == "type2":
+            return (
+                "Partially known problems use independent generation, "
+                "adversarial challenge, and neutral judgment."
+            )
+        if result.problem_type == "type3":
+            return (
+                "Unknown problems use lenses, first principles, competing "
+                "hypotheses, mutation, pruning, and simulation."
+            )
         return None
 
     @staticmethod
-    def _classify_error(result: AnalysisResult) -> str | None:
-        """Classify why a result was rejected."""
+    def _classify_error(result: AnalysisResult) -> str:
+        if result.error:
+            return "Execution error"
         if result.judge_verdict and result.judge_verdict.confidence < 50:
-            return "Wrong assumption — low judge confidence indicates flawed model"
+            return "Wrong assumption"
         if result.deception_flags:
-            return "Flawed model — rhetorical manipulation detected in arguments"
+            return "Flawed model"
         if not result.deep_test_passed:
-            return "Wrong assumption — deep test failed, problem was incorrectly framed"
+            return "Wrong assumption"
         if result.shadow_check and result.shadow_check.divergence_detected:
-            return "Execution error — shadow orchestrator diverged from original routing"
-        return None
+            return "Execution error"
+        return "Random variance"

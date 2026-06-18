@@ -52,5 +52,6 @@ class Observer:
             groupthink_detected=data.get("groupthink_detected", False),
             overconfidence_detected=data.get("overconfidence_detected", False),
             chaos_variable_injected=data.get("chaos_variable_injected", False),
+            chaos_variable=data.get("chaos_variable", ""),
             notes=data.get("notes", ""),
         )

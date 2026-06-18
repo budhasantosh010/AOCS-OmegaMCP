@@ -36,6 +36,9 @@ def test_low_risk_arithmetic_uses_direct_route():
     assert result.problem_type == "type1"
     assert result.total_llm_calls == 1
     assert result.specialist_proposal == "2 + 2 = 4."
+    assert result.verification.passed
+    assert result.blackboard_entries
+    assert result.learning_entries
     assert router.call_log == [{"role": "direct-answer"}]
 
 

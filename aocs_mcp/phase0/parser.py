@@ -3,7 +3,11 @@
 import re
 
 
-def parse(problem: str, domain: str | None = None) -> str:
+def parse(
+    problem: str,
+    domain: str | None = None,
+    context: str | None = None,
+) -> str:
     """Clean and structure the raw problem input.
 
     Extracts explicit request, implied constraints, and missing context.
@@ -16,12 +20,19 @@ def parse(problem: str, domain: str | None = None) -> str:
 
     structured = [
         f"## Parsed Problem (domain: {domain_label})",
-        f"",
-        f"### Raw Input",
+        "",
+        "### Raw Input",
         f"{problem.strip()}",
-        f"",
-        f"### Structured Breakdown",
+        "",
+        "### Structured Breakdown",
     ]
+
+    if context and context.strip():
+        structured.extend([
+            "",
+            "### Supplied Context",
+            context.strip(),
+        ])
 
     # Extract code references (file paths, line numbers)
     code_refs = re.findall(r"[\w./\\-]+\.[a-zA-Z]+:\d+", problem)

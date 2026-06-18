@@ -9,11 +9,14 @@ one entrypoint, and the AOCS runtime executes the required phases in code:
 Phase 0 framing
 -> Phase 1 scoring
 -> Type 1/2/3 routing
--> specialist / red team / contrarian / judge
--> quality gates
--> observer
 -> shadow orchestrator
+-> blindspot hunter
+-> risk-scaled fractal verification
+-> observer and optional chaos reconsideration
+-> ten quality gates
 -> memory audit
+-> bounded kill-switch / breakthrough routing when required
+-> learning flywheel
 -> final result
 ```
 
@@ -71,12 +74,11 @@ python -m aocs_mcp
 
 ## MCP Tool Surface
 
-Normal agent use exposes only two public tools:
+Normal agent use exposes one public tool:
 
 | Tool | Purpose |
 | --- | --- |
 | `aocs_run_full` | Canonical full deterministic AOCS run |
-| `aocs_analyze` | Compatibility alias for `aocs_run_full` |
 
 Internal phase tools are hidden by default so an outer coding agent cannot
 accidentally call only one shallow phase and skip the rest.
@@ -98,6 +100,9 @@ request.json   input request
 status.json    running/completed/error status
 trace.json     model-call trace with role names and prompt hashes
 result.json    full structured AOCS result
+blackboard.json provenance, confidence, timestamps, and decisions
+graveyard.json rejected Type 3 ideas and resurrection state
+learning.json  heuristics, error classifications, and calibration updates
 summary.md     human-readable summary
 ```
 
@@ -124,7 +129,9 @@ shows:
 - route and problem type
 - agent timeline
 - visible answers from Specialist, Red Team, Contrarian, Judge, Observer, Shadow
-  Orchestrator, Type 3 agents, and direct-answer runs
+  Orchestrator, verifier, TMR, Prover, Volume Swarm, all Type 3 stages,
+  Blindspot Hunter, Fractal Verification, Kill Switch, breakthrough protocols,
+  Universal Goal Protocol, Learning Flywheel, and direct-answer runs
 - raw summary
 
 By default, future `trace.json` files store a local response preview for each
@@ -365,3 +372,13 @@ python tests/test_router.py
 python tests/test_opencode_go_direct_http.py
 python tests/test_provider_adapters.py
 ```
+
+Run the complete automated suite:
+
+```bash
+python -m pytest tests -q
+```
+
+The default model-call budget is 64 so critical fractal, Type 3, and kill-switch
+paths can complete. Use `--max-sub-agents` to set a smaller or larger explicit
+budget.

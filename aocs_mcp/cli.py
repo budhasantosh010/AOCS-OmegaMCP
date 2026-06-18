@@ -51,7 +51,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--risk", default=None, choices=["low", "medium", "high", "critical"], help="Optional risk hint. Omit to let AOCS infer risk.")
     run.add_argument("--fractal-depth", type=int, default=None, help="Optional recursion depth hint. Omit to let AOCS classify depth.")
     run.add_argument("--context", default=None)
-    run.add_argument("--max-sub-agents", type=int, default=16)
+    run.add_argument("--max-sub-agents", type=int, default=64)
     run.add_argument("--output-dir", default=None, help="Where to write .aocs run artifacts")
     run.add_argument("--no-store", action="store_true", help="Run without writing .aocs artifacts")
     run.set_defaults(func=_run)

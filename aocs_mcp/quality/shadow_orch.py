@@ -66,7 +66,18 @@ class ShadowOrchestrator:
 
         # Safe path: choose the more conservative
         risk_order = {"low": 0, "medium": 1, "high": 2, "critical": 3}
-        if risk_order.get(original.risk_level, 0) >= risk_order.get(shadow.risk_level, 0):
+        type_order = {"type1": 0, "type2": 1, "type3": 2}
+        original_conservatism = (
+            risk_order.get(original.risk_level, 0),
+            type_order.get(original.problem_type, 1),
+            original.fractal_depth,
+        )
+        shadow_conservatism = (
+            risk_order.get(shadow.risk_level, 0),
+            type_order.get(shadow.problem_type, 1),
+            shadow.fractal_depth,
+        )
+        if original_conservatism >= shadow_conservatism:
             safe_path = f"Use original: {original.problem_type} (risk {original.risk_level})"
         else:
             safe_path = f"Use shadow: {shadow.problem_type} (risk {shadow.risk_level})"

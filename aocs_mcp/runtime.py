@@ -28,7 +28,7 @@ class AOCSRunRequest(BaseModel):
     risk: str | None = None
     fractal_depth: int | None = None
     context: str | None = None
-    max_sub_agents: int = 16
+    max_sub_agents: int = 64
     persist: bool = True
     metadata: dict = Field(default_factory=dict)
 
@@ -89,6 +89,12 @@ class AOCSRuntime:
         if run_dir:
             self._write_json(run_dir / "trace.json", router.call_log)
             self._write_json(run_dir / "result.json", result.model_dump())
+            self._write_json(run_dir / "blackboard.json", result.blackboard_entries)
+            self._write_json(run_dir / "graveyard.json", result.graveyard_entries)
+            self._write_json(
+                run_dir / "learning.json",
+                [entry.model_dump() for entry in result.learning_entries],
+            )
             self._write_text(run_dir / "summary.md", self._summary_markdown(result))
             self._write_json(
                 run_dir / "status.json",

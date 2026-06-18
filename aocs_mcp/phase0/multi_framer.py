@@ -40,9 +40,20 @@ class MultiFramer:
     def __init__(self, router: LLMRouter):
         self.router = router
 
-    async def generate(self, problem: str, domain: str | None = None) -> list[Interpretation]:
+    async def generate(
+        self,
+        problem: str,
+        domain: str | None = None,
+        context: str | None = None,
+    ) -> list[Interpretation]:
         domain_label = domain or "infer from problem; do not assume software"
-        user_prompt = f"Problem: {problem}\nDomain: {domain_label}\nLenses: {', '.join(LENSES)}"
+        context_text = context.strip() if context and context.strip() else "(none supplied)"
+        user_prompt = (
+            f"Problem: {problem}\n"
+            f"Domain: {domain_label}\n"
+            f"Context: {context_text}\n"
+            f"Lenses: {', '.join(LENSES)}"
+        )
         system = FRAMER_PROMPT.format(num=5, lenses=", ".join(LENSES))
 
         data = await self.router.call_structured("multi-framer", system, user_prompt)

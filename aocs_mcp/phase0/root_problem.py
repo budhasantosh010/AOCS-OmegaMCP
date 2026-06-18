@@ -29,6 +29,7 @@ class RootProblemExtractor:
     ) -> str:
         user_prompt = (
             f"Original problem:\n{problem}\n\n"
+            f"Framed context:\n{framed}\n\n"
             f"Interpretations:\n{interpretations_summary}\n\n"
         )
         data = await self.router.call_structured("root-problem", ROOT_PROMPT, user_prompt)

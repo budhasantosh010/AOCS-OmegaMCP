@@ -23,6 +23,8 @@ class MemoryAuditor:
 
         # Find entries with same key but different values
         for key, same_key_entries in seen.items():
+            if not key.startswith(("claim:", "fact:", "decision:")):
+                continue
             if len(same_key_entries) < 2:
                 continue
             values = set(str(e["value"])[:100] for e in same_key_entries)

@@ -24,12 +24,20 @@ class Blackboard:
         """Store a result with provenance metadata."""
         self._entries.append({
             "key": key,
-            "value": str(value)[:500] if not isinstance(value, (int, float, bool)) else value,
+            "value": self._serializable_value(value),
             "type": type(value).__name__,
             "provenance": provenance,
             "confidence": max(0.0, min(1.0, confidence)),
             "timestamp": time.time(),
         })
+
+    @staticmethod
+    def _serializable_value(value: object):
+        if hasattr(value, "model_dump"):
+            return value.model_dump()
+        if isinstance(value, (str, int, float, bool, list, dict)) or value is None:
+            return value
+        return str(value)
 
     def store_assumptions(self, assumptions: list[Assumption]) -> None:
         for a in assumptions:
@@ -78,8 +86,9 @@ class Blackboard:
 
         lines = [f"Blackboard: {len(entries)} entries"]
         for e in entries[:20]:
+            value = str(e["value"])
             lines.append(
-                f"  [{e['key']}] {e['value'][:80]} "
+                f"  [{e['key']}] {value[:80]} "
                 f"(confidence: {e['confidence']:.0%}, provenance: {e['provenance']})"
             )
         return "\n".join(lines)

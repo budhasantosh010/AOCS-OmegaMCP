@@ -230,6 +230,239 @@ VersionPublished : Remote repository contains this documented AOCS runtime versi
 @enduml
 ```
 
+## 2026-06-18 - Complete Skill Parity Delta
+
+```plantuml
+@startuml AOCS_Omega_Complete_Skill_Parity_2026_06_18
+
+title AOCS Omega - Complete Operational Skill Parity - 2026-06-18
+
+hide empty description
+skinparam shadowing false
+skinparam state {
+  BackgroundColor White
+  BorderColor #4B5563
+  FontColor #111827
+}
+
+[*] --> RequestBoundary
+
+state "RequestBoundary" as RequestBoundary {
+  [*] --> PortableRequest
+  PortableRequest : problem is required
+  PortableRequest : domain, risk, and depth are optional hints
+  PortableRequest : default model-call budget is 64
+  PortableRequest --> OnePublicTool
+  OnePublicTool : MCP advertises only aocs_run_full
+  OnePublicTool --> RuntimeOwnsWorkflow
+  RuntimeOwnsWorkflow : outer coding agent cannot skip internal phases
+}
+
+RequestBoundary --> CompleteRuntime
+
+state "CompleteRuntime" as CompleteRuntime {
+
+  state "FramingAndPriorityRegion" as FramingRegion {
+    [*] --> ParseContext
+    ParseContext --> MultiFrame
+    MultiFrame --> MapAssumptions
+    MapAssumptions --> QuantifyUncertainty
+    QuantifyUncertainty --> ExtractRoot
+    ExtractRoot --> DeepTest
+    DeepTest --> MultiFrame : cannot answer all four questions
+    DeepTest --> ScoreVerticals : framing passes or bounded reframe limit reached
+    ScoreVerticals : model supplies I/L/U/V
+    ScoreVerticals : code applies official weights and zones
+    ScoreVerticals --> Classify
+    Classify : type, risk, depth, decomposable flag, chunks
+  }
+
+  --
+
+  state "ExecutionRegion" as ExecutionRegion {
+    [*] --> RouteChoice
+    RouteChoice --> Type1 : type1
+    RouteChoice --> Type2 : type2
+    RouteChoice --> Type3 : type3
+
+    state "Type1" as Type1 {
+      [*] --> T1Specialist
+      T1Specialist : Question -> Cut -> Simplify -> Speed up -> Automate
+      T1Specialist --> DeterministicVerifier
+      DeterministicVerifier --> CriticalTMR : critical
+      DeterministicVerifier --> Prover : not critical
+      CriticalTMR --> Prover
+      Prover --> T1Complete
+    }
+
+    state "Type2" as Type2 {
+      [*] --> DecompositionChoice
+      DecompositionChoice --> VolumeSwarm : decomposable with chunks
+      DecompositionChoice --> Specialist : not decomposable
+      VolumeSwarm : workers -> peer audits -> auditor -> synthesis
+      VolumeSwarm --> Specialist
+      Specialist --> RedTeam
+      RedTeam --> Contrarian
+      Contrarian --> DeceptionDetector
+      DeceptionDetector --> BlindJudge
+      BlindJudge --> T2Complete
+    }
+
+    state "Type3" as Type3 {
+      [*] --> LensAgents
+      LensAgents --> FirstPrinciples
+      FirstPrinciples --> Hypotheses
+      Hypotheses --> IdeaMutator
+      IdeaMutator --> RuthlessPruner
+      RuthlessPruner --> WeirdnessReserve
+      RuthlessPruner --> GraveyardArchive
+      WeirdnessReserve --> Serendipity
+      GraveyardArchive --> Serendipity
+      Serendipity --> Simulations
+      Simulations --> AnomalyCapture
+      AnomalyCapture --> ParadigmDetector
+      ParadigmDetector --> GraveyardResurrection
+      GraveyardResurrection --> QuestTracker
+      QuestTracker : protect about 10 percent of exploration
+      QuestTracker --> T3Complete
+    }
+  }
+
+  --
+
+  state "IndependentVerificationRegion" as VerificationRegion {
+    [*] --> ShadowCheck
+    ShadowCheck --> SaferReroute : shadow is more conservative
+    ShadowCheck --> BlindspotCheck : routes agree
+    SaferReroute --> BlindspotCheck
+    BlindspotCheck --> FractalChoice
+    FractalChoice --> Depth0 : depth 0
+    FractalChoice --> Depth1 : depth 1
+    FractalChoice --> Depth2 : depth 2
+    FractalChoice --> Depth3 : depth 3
+    Depth1 : Red Team -> Contrarian -> Judge
+    Depth2 : Depth1 -> Observer -> Shadow
+    Depth3 : Depth2 -> challenge the second-order verification
+    Depth0 --> ObserverCheck
+    Depth1 --> ObserverCheck
+    Depth2 --> ObserverCheck
+    Depth3 --> ObserverCheck
+    ObserverCheck --> ChaosReconsideration : chaos variable injected
+    ObserverCheck --> TenGates : no chaos variable
+    ChaosReconsideration : rebuild conclusion from first principles
+    ChaosReconsideration --> TenGates
+    TenGates --> MemoryAudit
+  }
+
+  --
+
+  state "EscapeAndLearningRegion" as EscapeRegion {
+    [*] --> AttemptEvaluation
+    AttemptEvaluation --> OneBoundedRetry : first same-approach failure
+    OneBoundedRetry --> KillSwitch : second same-approach failure
+    AttemptEvaluation --> ParadigmBreakthrough : Type3 paradigm alert
+    AttemptEvaluation --> NormalLearning : quality survives
+
+    state "KillSwitch" as KillSwitch {
+      [*] --> StopThirdAttempt
+      StopThirdAttempt --> AnalogicalMining
+      AnalogicalMining --> HigherDimension
+      HigherDimension --> FutureBackcast
+      FutureBackcast --> BreakFramework
+      BreakFramework --> FreshPhase0
+      FreshPhase0 --> FreshScoring
+      FreshScoring --> FreshClassification
+    }
+
+    state "ParadigmBreakthrough" as ParadigmBreakthrough {
+      [*] --> ParadigmAnalogical
+      ParadigmAnalogical --> ParadigmHigherDimension
+      ParadigmHigherDimension --> ParadigmBackcast
+      ParadigmBackcast --> ParadigmBreakFramework
+      ParadigmBreakFramework --> ReframedPhase0
+      ReframedPhase0 --> ReframedScoring
+      ReframedScoring --> ReframedClassification
+    }
+
+    NormalLearning --> Flywheel
+    FreshClassification --> Flywheel
+    ReframedClassification --> Flywheel
+    Flywheel : heuristic + error class + calibration update
+  }
+}
+
+CompleteRuntime --> UniversalGoalDecision
+
+state "UniversalGoalDecision" as UniversalGoalDecision {
+  [*] --> StandardResult : ordinary task
+  [*] --> GoalAssembly : novel Type3 complete-system goal
+  GoalAssembly --> DiscoverRoles
+  DiscoverRoles --> InventoryPieces
+  InventoryPieces --> AssembleClosedLoop
+  AssembleClosedLoop --> DefineCrudeVersion
+  DefineCrudeVersion --> MeasureWaste
+  MeasureWaste --> ReplaceRootInefficiency
+  ReplaceRootInefficiency --> StandardResult
+}
+
+StandardResult --> PersistAndDisplay
+
+state "PersistAndDisplay" as PersistAndDisplay {
+  [*] --> PersistArtifacts
+  PersistArtifacts : request, status, trace, result
+  PersistArtifacts : blackboard, graveyard, learning, summary
+  PersistArtifacts --> DashboardTimeline
+  DashboardTimeline : all agent and protocol outputs remain visible
+  DashboardTimeline --> HostReceivesResult
+  HostReceivesResult : OpenCode, Claude, Codex, Cursor, or CLI receives final result
+}
+
+PersistAndDisplay --> VerifiedState
+VerifiedState : 81 automated tests passed before final browser and publication checks
+VerifiedState --> [*]
+
+@enduml
+```
+
+### Orthogonal-region meaning
+
+The large `CompleteRuntime` composite state uses orthogonal regions because the
+project has four concerns that must all remain valid:
+
+1. framing and priority
+2. route execution
+3. independent verification
+4. escape and learning
+
+They are shown separately so a future developer cannot mistake one region for a
+replacement for another. For example, adding a Type 3 idea generator does not
+replace memory auditing, and adding quality gates does not replace the
+kill-switch.
+
+### Current invariant
+
+```text
+The host triggers one tool.
+The AOCS runtime owns every transition.
+Every conditional protocol leaves a structured artifact.
+No failed same-path approach is attempted a third time.
+No rejected Type 3 idea is silently deleted.
+No provider secret is stored in the repository.
+```
+
+### Verification state
+
+```text
+Tests: 81 passed
+Ruff: passed
+Compileall: passed
+Diff check: passed
+Security and known-credential scans: passed
+MCP doctor: connected, no failures
+Dashboard: no desktop or mobile horizontal overflow
+Fresh paid-model call: not run because no provider key is set in this terminal
+```
+
 ## 2026-06-15 - Global OpenCode Slash Command Install Delta
 
 ```plantuml

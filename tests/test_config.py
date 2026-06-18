@@ -22,6 +22,54 @@ def test_config_role_lookup():
     assert "mode" in role
 
 
+def test_config_contains_every_runtime_model_role():
+    cfg = Config()
+    roles = cfg.get("roles", {})
+    required = {
+        "direct-answer",
+        "classifier",
+        "scoring-engine",
+        "multi-framer",
+        "root-problem",
+        "deep-test",
+        "type1-specialist",
+        "specialist",
+        "prover",
+        "tmr",
+        "tmr-judge",
+        "red-team",
+        "contrarian",
+        "deception-detector",
+        "judge",
+        "observer",
+        "shadow-orchestrator",
+        "blindspot-hunter",
+        "fractal-observer",
+        "fractal-shadow",
+        "chaos-reconsideration",
+        "type3-lens",
+        "type3-first-principles",
+        "type3-hypothesis",
+        "idea-mutator",
+        "ruthless-pruner",
+        "serendipity-injector",
+        "thought-simulator",
+        "paradigm-detector",
+        "universal-goal-assembly",
+        "inefficiency-hunter",
+        "analogical-mining",
+        "higher-dimension",
+        "future-backcast",
+        "break-framework",
+        "swarm-worker",
+        "swarm-peer-audit",
+        "swarm-auditor",
+        "swarm-synthesis",
+    }
+
+    assert required - set(roles) == set()
+
+
 def test_config_merges_local():
     """Local config should override defaults."""
     with tempfile.TemporaryDirectory() as tmp:

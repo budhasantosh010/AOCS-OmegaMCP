@@ -27,7 +27,7 @@ class Prover:
         self.router = router
 
     async def prove(self, reasoning: str) -> ProverOutput:
-        data = await self.router.call_structured("classifier", PROVER_SYSTEM, reasoning)
+        data = await self.router.call_structured("prover", PROVER_SYSTEM, reasoning)
 
         claims = []
         proved = []

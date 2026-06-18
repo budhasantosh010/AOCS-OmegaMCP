@@ -69,7 +69,73 @@ def test_dashboard_derives_agent_steps_from_result_without_trace():
     assert "Judge" in titles
 
 
+def test_dashboard_derives_complete_protocol_outputs():
+    steps = build_agent_steps(
+        {
+            "verification": {"passed": True, "checks": ["validated"]},
+            "prover_result": {"claims": ["terminates"], "proved": [True]},
+            "tmr_result": {"consensus": True, "method_b": "B", "method_c": "C"},
+            "blindspot_check": {
+                "missing_data": ["negative cases"],
+                "falsification_conditions": ["counterexample"],
+            },
+            "fractal_result": {
+                "executed_depth": 2,
+                "survived": True,
+                "challenges": [{"layer": "first-order", "red_team": "attack"}],
+            },
+            "kill_switch": {
+                "fired": True,
+                "failure_count": 2,
+                "reframed_problem": "new root",
+            },
+            "goal_achievement": {
+                "single_job": "close the gap",
+                "closed_loop": ["A", "B", "feedback"],
+            },
+            "breakthroughs": [
+                {"method": "analogical", "adapted_proposal": "import principle"}
+            ],
+            "break_framework": {
+                "triggered": True,
+                "temporary_structure": "evidence-first",
+            },
+            "swarm_result": {
+                "workers": [{"worker_id": 1, "result": "chunk result"}],
+                "peer_audits": ["peer audit"],
+                "auditor_report": "independent audit",
+                "synthesis": "merged result",
+            },
+            "paradigm_reframe": {
+                "problem": "new frame",
+                "classification": {"problem_type": "type2"},
+            },
+            "learning_entries": [
+                {"heuristic": "test assumptions", "success": True}
+            ],
+        },
+        [],
+    )
+
+    titles = {step["title"] for step in steps}
+    assert {
+        "Deterministic Verifier",
+        "Formal Prover",
+        "Triple Modular Redundancy",
+        "Blindspot Hunter",
+        "Fractal Verification",
+        "Kill Switch",
+        "Universal Goal Protocol",
+        "Breakthrough Protocols",
+        "Break-Framework",
+        "Volume Swarm",
+        "Paradigm Reframe",
+        "Learning Flywheel",
+    } <= titles
+
+
 if __name__ == "__main__":
     test_dashboard_lists_and_loads_runs()
     test_dashboard_derives_agent_steps_from_result_without_trace()
+    test_dashboard_derives_complete_protocol_outputs()
     print("dashboard tests passed")

@@ -206,6 +206,52 @@ def _outputs_by_role(result: dict) -> dict[str, str]:
     if audit:
         outputs["memory-audit"] = json.dumps(audit, indent=2, ensure_ascii=False)
 
+    structured_outputs = {
+        "deterministic-verifier": result.get("verification"),
+        "formal-prover": result.get("prover_result"),
+        "triple-modular-redundancy": result.get("tmr_result"),
+        "blindspot-hunter": result.get("blindspot_check"),
+        "fractal-verification": result.get("fractal_result"),
+        "kill-switch": result.get("kill_switch"),
+        "universal-goal-protocol": result.get("goal_achievement"),
+        "breakthrough-protocols": result.get("breakthroughs"),
+        "break-framework": result.get("break_framework"),
+        "volume-swarm": result.get("swarm_result"),
+        "paradigm-reframe": result.get("paradigm_reframe"),
+        "learning-flywheel": result.get("learning_entries"),
+    }
+    for role, value in structured_outputs.items():
+        if value:
+            outputs[role] = json.dumps(value, indent=2, ensure_ascii=False)
+
+    if type3:
+        type3_roles = {
+            "idea-mutator": type3.get("mutations"),
+            "ruthless-pruner": {
+                "survivors": type3.get("survivors"),
+                "rejected_ideas": type3.get("rejected_ideas"),
+                "weirdness_reserve": type3.get("weirdness_reserve"),
+            },
+            "serendipity-injector": {
+                "seeds": type3.get("serendipity_seeds"),
+                "connections": type3.get("serendipity_connections"),
+            },
+            "thought-simulator": type3.get("simulations"),
+            "paradigm-detector": {
+                "alert": type3.get("paradigm_alert"),
+                "density": type3.get("anomaly_density"),
+                "reason": type3.get("paradigm_reason"),
+            },
+            "quest-tracker": type3.get("quests"),
+        }
+        for role, value in type3_roles.items():
+            if value:
+                outputs[role] = json.dumps(
+                    value,
+                    indent=2,
+                    ensure_ascii=False,
+                )
+
     return {key: value for key, value in outputs.items() if value}
 
 
@@ -225,6 +271,24 @@ def _role_title(role: str) -> str:
         "type3-lens": "Type 3 Lens Agent",
         "type3-first-principles": "Type 3 First Principles",
         "type3-hypothesis": "Type 3 Hypothesis Generator",
+        "idea-mutator": "Idea Mutator",
+        "ruthless-pruner": "Ruthless Pruner",
+        "serendipity-injector": "Serendipity Injector",
+        "thought-simulator": "Thought Experiments and Simulations",
+        "paradigm-detector": "Paradigm Detector",
+        "quest-tracker": "Quest Tracker",
+        "deterministic-verifier": "Deterministic Verifier",
+        "formal-prover": "Formal Prover",
+        "triple-modular-redundancy": "Triple Modular Redundancy",
+        "blindspot-hunter": "Blindspot Hunter",
+        "fractal-verification": "Fractal Verification",
+        "kill-switch": "Kill Switch",
+        "universal-goal-protocol": "Universal Goal Protocol",
+        "breakthrough-protocols": "Breakthrough Protocols",
+        "break-framework": "Break-Framework",
+        "volume-swarm": "Volume Swarm",
+        "paradigm-reframe": "Paradigm Reframe",
+        "learning-flywheel": "Learning Flywheel",
         "quality-gates": "Quality Gates",
         "memory-audit": "Memory Audit",
     }.get(role, role.replace("-", " ").title())

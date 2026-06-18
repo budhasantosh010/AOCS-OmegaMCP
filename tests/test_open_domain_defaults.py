@@ -32,6 +32,7 @@ def test_cli_parser_defaults_are_open_domain():
     assert args.domain is None
     assert args.risk is None
     assert args.fractal_depth is None
+    assert args.max_sub_agents == 64
 
 
 def test_cli_run_default_domain_and_risk_are_open():

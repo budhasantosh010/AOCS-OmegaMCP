@@ -1,45 +1,50 @@
-"""7.1 Type 1 Pipe — Specialist → Deterministic Verifier → Prover."""
+"""Type 1 route: Specialist -> Verifier -> critical TMR -> Prover."""
 
-from aocs_mcp.router import LLMRouter
-from aocs_mcp.pipeline.models import (
-    Phase0Result, SpecialistOutput, ProverOutput, Type1Result,
-)
-from aocs_mcp.agents.specialist import Specialist
 from aocs_mcp.agents.prover import Prover
+from aocs_mcp.agents.tmr import TMR
+from aocs_mcp.agents.type1_specialist import Type1Specialist
+from aocs_mcp.pipeline.models import Phase0Result, SpecialistOutput, Type1Result
+from aocs_mcp.quality.verifier import DeterministicVerifier
+from aocs_mcp.router import LLMRouter
 
 
 class Type1Pipe:
-    """Known system — established path, verifiable answer."""
+    """Known system with an established, independently verifiable path."""
 
     def __init__(self, router: LLMRouter):
         self.router = router
 
-    async def run(self, phase0: Phase0Result) -> Type1Result:
-        # Step 1: Specialist
-        specialist = await Specialist(self.router).run(
+    async def run(
+        self,
+        phase0: Phase0Result,
+        risk: str | None = None,
+    ) -> Type1Result:
+        specialist = await Type1Specialist(self.router).run(
             problem=phase0.parsed_problem,
             root_problem=phase0.root_problem,
             assumptions=phase0.assumptions,
         )
+        verification = DeterministicVerifier().verify(specialist)
 
-        # Step 2: Deterministic Verifier (code — checks constraints)
-        verified = self._verify(specialist)
+        tmr_result = None
+        if risk == "critical":
+            tmr_result = await TMR(self.router).run(
+                phase0.root_problem or phase0.parsed_problem,
+                specialist.proposal,
+            )
 
-        # Step 3: Prover (LLM — formal claims)
-        prover = Prover(self.router)
-        prover_result = await prover.prove(specialist.proposal)
+        prover_result = await Prover(self.router).prove(specialist.proposal)
 
         return Type1Result(
             specialist=specialist,
-            verified=verified,
+            verified=verification.passed,
+            verification=verification,
             prover=prover_result,
+            tmr=tmr_result,
         )
 
     @staticmethod
     def _verify(specialist: SpecialistOutput) -> bool:
-        """Deterministic verification — checks for basic constraints."""
         if not specialist.proposal.strip():
             return False
-        if specialist.confidence < 0:
-            return False
-        return True
+        return specialist.confidence >= 0

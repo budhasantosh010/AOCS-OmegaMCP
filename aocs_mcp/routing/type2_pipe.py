@@ -2,8 +2,7 @@
 
 from aocs_mcp.router import LLMRouter
 from aocs_mcp.pipeline.models import (
-    Phase0Result, Phase1Result, SpecialistOutput, RedTeamOutput,
-    ContrarianOutput, JudgeVerdict, Type2Result,
+    Phase0Result, Phase1Result, Type2Result,
 )
 from aocs_mcp.agents.specialist import Specialist
 from aocs_mcp.agents.red_team import RedTeam
@@ -22,6 +21,7 @@ class Type2Pipe:
         self,
         phase0: Phase0Result,
         phase1: Phase1Result | None = None,
+        risk: str | None = None,
     ) -> Type2Result:
         # Step 1: Specialist (1 LLM call)
         specialist = await Specialist(self.router).run(
@@ -49,10 +49,18 @@ class Type2Pipe:
             specialist.proposal, red_team.critique, contrarian.analysis,
         )
 
+        external_review_hooks = []
+        if risk in ("high", "critical"):
+            external_review_hooks.append(
+                "Obtain independent external review from a qualified human or "
+                "third-party verification tool before acting."
+            )
+
         return Type2Result(
             specialist=specialist,
             red_team=red_team,
             contrarian=contrarian,
             deception_flags=deception,
             judge=judge,
+            external_review_hooks=external_review_hooks,
         )

@@ -50,4 +50,11 @@ class FutureBackcast:
             cross_domain_sources=sources,
             solution_principle=data.get("frame_shift", ""),
             adapted_proposal=data.get("roadmap", ""),
+            details={
+                "maybe_that_became_yes": data.get(
+                    "maybe_that_became_yes",
+                    "",
+                ),
+                "milestones": milestones,
+            },
         )

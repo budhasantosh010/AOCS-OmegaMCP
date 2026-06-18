@@ -7,11 +7,10 @@ from aocs_mcp.config import Config
 from aocs_mcp.router import LLMRouter
 from aocs_mcp.pipeline.models import (
     AnalysisResult, Phase0Result, Classification, Type2Result,
-    SpecialistOutput, RedTeamOutput, JudgeVerdict,
+    SpecialistOutput, JudgeVerdict,
     GateResult, BreakthroughResult, SwarmResult,
-    Assumption, ScoredProblem,
+    ScoredProblem,
 )
-from aocs_mcp.pipeline.orchestrator import AOCSOrchestrator
 from aocs_mcp.runtime import AOCSRunRequest, AOCSRuntime
 from aocs_mcp.phase0.parser import parse
 from aocs_mcp.phase0.multi_framer import MultiFramer
@@ -31,7 +30,6 @@ from aocs_mcp.agents.judge import Judge
 from aocs_mcp.agents.prover import Prover
 from aocs_mcp.quality.gates import QualityGates
 from aocs_mcp.quality.observer import Observer
-from aocs_mcp.quality.shadow_orch import ShadowOrchestrator
 from aocs_mcp.breakthrough.analogical_mining import AnalogicalMining
 from aocs_mcp.breakthrough.higher_dimension import HigherDimension
 from aocs_mcp.breakthrough.future_backcast import FutureBackcast
@@ -72,7 +70,7 @@ async def aocs_run_full(
     risk: str | None = None,
     fractal_depth: int | None = None,
     context: str | None = None,
-    max_sub_agents: int = 16,
+    max_sub_agents: int = 64,
 ) -> AnalysisResult:
     """Full AOCS‑Ω pipeline: Phase 0 → Phase 1 → Classify → Route → Execute → Verify → Report.
 
@@ -94,16 +92,15 @@ async def aocs_run_full(
     ))
 
 
-@mcp.tool()
 async def aocs_analyze(
     problem: str,
     domain: str | None = None,
     risk: str | None = None,
     fractal_depth: int | None = None,
     context: str | None = None,
-    max_sub_agents: int = 16,
+    max_sub_agents: int = 64,
 ) -> AnalysisResult:
-    """Compatibility alias for aocs_run_full. Prefer aocs_run_full for normal use."""
+    """Internal Python compatibility alias; not registered as an MCP tool."""
     return await aocs_run_full(
         problem=problem,
         domain=domain,
@@ -123,7 +120,7 @@ async def aocs_classify(
 ) -> Classification:
     """Classify problem as Type 1 (Known), Type 2 (Partially Known), or Type 3 (Unknown/Discovery)."""
     # Do a minimal Phase 0 to inform classification
-    from aocs_mcp.pipeline.models import Phase0Result, DeepTestResult
+    from aocs_mcp.pipeline.models import Phase0Result
     parsed = parse(problem, domain)
     phase0 = Phase0Result(parsed_problem=parsed)
     return classify(problem, phase0)
@@ -182,7 +179,7 @@ async def aocs_run_type2(
     assumptions: list[str] | None = None,
 ) -> Type2Result:
     """Full Type 2 High-Stakes Triad: Specialist → Red Team → Contrarian → Deception Detector → Judge."""
-    from aocs_mcp.pipeline.models import Phase0Result, Phase1Result
+    from aocs_mcp.pipeline.models import Phase0Result
     from aocs_mcp.pipeline.models import Assumption as AssumptionModel
     a_list = [AssumptionModel(statement=a) for a in (assumptions or [])]
     phase0 = Phase0Result(
@@ -266,7 +263,7 @@ async def aocs_quality_gates(
     risk: str | None = None,
 ) -> list[GateResult]:
     """Apply all 10 quality gates to a proposed solution. Returns pass/fail per gate."""
-    from aocs_mcp.pipeline.models import Type2Result, SpecialistOutput, RedTeamOutput, ContrarianOutput, JudgeVerdict
+    from aocs_mcp.pipeline.models import Type2Result, SpecialistOutput, JudgeVerdict
     dummy = Type2Result(
         specialist=SpecialistOutput(proposal=solution),
         judge=JudgeVerdict(confidence=50.0),

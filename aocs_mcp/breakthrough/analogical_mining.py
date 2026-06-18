@@ -13,6 +13,8 @@ Protocol:
 2. Search across domains: Scan manufacturing, biology, music, sports, nature, cooking, children's toys, etc.
 3. Extract the solution principle: What made it work in the other domain?
 4. Transplant and adapt: Propose applying it here.
+5. Define a concrete feasibility test. Reject the analogy only if that test
+   demonstrates failure, not because the approach is unconventional.
 
 Output JSON:
 ```json
@@ -20,7 +22,8 @@ Output JSON:
     "abstract_structure": "the core abstract problem",
     "cross_domain_sources": [{{"domain": "biology", "analogy": "..."}}],
     "solution_principle": "the core mechanism from the analogy",
-    "adapted_proposal": "how to apply it here"
+    "adapted_proposal": "how to apply it here",
+    "feasibility_test": "simulation, prototype, or experiment"
 }}
 ```"""
 
@@ -49,4 +52,7 @@ class AnalogicalMining:
             cross_domain_sources=sources,
             solution_principle=data.get("solution_principle", ""),
             adapted_proposal=data.get("adapted_proposal", ""),
+            details={
+                "feasibility_test": data.get("feasibility_test", ""),
+            },
         )

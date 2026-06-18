@@ -1,6 +1,5 @@
 """Host CLI subprocess — calls opencode run / claude --print."""
 
-import os
 import subprocess
 import shutil
 
